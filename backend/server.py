@@ -248,10 +248,12 @@ async def fetch_rss_feeds() -> List[Dict]:
                     elif hasattr(entry, 'content') and entry.content:
                         content = entry.content[0].value if isinstance(entry.content, list) else entry.content
                     
-                    # Clean HTML tags
+                    # Clean HTML tags from content
                     if content:
-                        soup = BeautifulSoup(content, 'html.parser')
-                        content = soup.get_text().strip()
+                        content = clean_html_text(content)
+                    
+                    # Clean HTML tags from title
+                    clean_title = clean_html_text(entry.title) if hasattr(entry, 'title') else "No title"
                     
                     # Parse publication date
                     pub_date = datetime.now(timezone.utc)
@@ -263,16 +265,20 @@ async def fetch_rss_feeds() -> List[Dict]:
                     # Skip articles older than 7 days
                     if (datetime.now(timezone.utc) - pub_date).days > 7:
                         continue
+                        
+                    # Skip if title or content is empty after cleaning
+                    if not clean_title.strip() or not content.strip():
+                        continue
                     
                     articles.append({
-                        'title': entry.title,
+                        'title': clean_title,
                         'content': content[:1000],  # Limit content length
-                        'category': feed_info.get('category', categorize_article(entry.title, content)),
+                        'category': feed_info.get('category', categorize_article(clean_title, content)),
                         'source': feed_info['name'],
                         'url': entry.link,
                         'image_url': get_feed_image(entry),
                         'published_at': pub_date,
-                        'keywords': extract_keywords(entry.title, content)
+                        'keywords': extract_keywords(clean_title, content)
                     })
                     
                 except Exception as e:
