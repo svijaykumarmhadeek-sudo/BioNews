@@ -1086,26 +1086,25 @@ async def startup_event():
         
         # Start the scheduler for auto-updates
         if not scheduler.running:
-            # News updates every 6 hours (more frequent for real-time feeds)
+            # News updates every 30 minutes for real-time experience
             scheduler.add_job(
                 scheduled_news_update,
                 'interval',
-                hours=6,
+                minutes=30,
                 id='news_update',
                 next_run_time=None
             )
             
-            # Stock updates daily at market close (6 PM EST)
+            # Stock updates every 30 minutes during market hours
             scheduler.add_job(
                 scheduled_stock_update,
-                'cron',
-                hour=18,  # 6 PM EST
-                minute=0,
+                'interval',
+                minutes=30,
                 id='stock_update'
             )
             
             scheduler.start()
-            logger.info("Auto-update scheduler started - news every 6 hours, stocks daily")
+            logger.info("Auto-update scheduler started - both news and stocks every 30 minutes")
         
     except Exception as e:
         logger.error(f"Error during startup: {e}")
