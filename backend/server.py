@@ -522,14 +522,29 @@ async def summarize_article(content: str, title: str) -> tuple:
                 # Ensure summary ends with complete sentence
                 if len(raw_summary) > 400:
                     # Find the last complete sentence within 400 chars
-                    truncated = raw_summary[:400]
+                    truncated = raw_summary[:380]  # Leave room for complete sentence
                     last_period = truncated.rfind('.')
-                    if last_period > 300:  # Ensure we have at least 300 chars
+                    if last_period > 250:  # Ensure we have substantial content
                         summary = truncated[:last_period + 1]
                     else:
-                        summary = raw_summary[:400]
+                        # If no good break point, add period to make complete
+                        words = truncated.split()
+                        if len(words) > 3:
+                            # Remove last incomplete word and add period
+                            complete_words = ' '.join(words[:-1])
+                            summary = complete_words + "."
+                        else:
+                            summary = truncated + "."
                 else:
-                    summary = raw_summary
+                    # Make sure it ends with period
+                    if not raw_summary.endswith('.'):
+                        if len(raw_summary) < 390:
+                            summary = raw_summary + "."
+                        else:
+                            words = raw_summary[:390].split()
+                            summary = ' '.join(words[:-1]) + "."
+                    else:
+                        summary = raw_summary
         
         return headline, summary
         
