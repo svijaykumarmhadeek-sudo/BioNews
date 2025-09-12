@@ -505,19 +505,19 @@ async def fetch_real_biotech_news() -> List[Dict]:
 async def summarize_article(content: str, title: str) -> tuple:
     """Use LLM to create Inshorts-style headline and summary"""
     try:
-        user_message = UserMessage(text=f"Create Inshorts-style content for this biotech article:\n\nTitle: {title}\nContent: {content}\n\nGenerate:\n1. Concise headline (50-60 chars)\n2. Brief summary (120-150 chars)\n\nFormat: HEADLINE: [headline]\nSUMMARY: [summary]")
+        user_message = UserMessage(text=f"Create Inshorts-style content for this biotech article:\n\nTitle: {title}\nContent: {content}\n\nGenerate:\n1. Concise headline (50-60 chars)\n2. Detailed summary (350-400 chars)\n\nInclude key details like drug names, companies, clinical phases, mechanisms, and outcomes. Make it comprehensive yet readable.\n\nFormat: HEADLINE: [headline]\nSUMMARY: [summary]")
         response = await chat.send_message(user_message)
         
         # Parse the response
         lines = response.strip().split('\n')
         headline = title[:60]  # Fallback
-        summary = content[:150] + "..."  # Fallback
+        summary = content[:400] + "..."  # Fallback
         
         for line in lines:
             if line.startswith('HEADLINE:'):
                 headline = line.replace('HEADLINE:', '').strip()[:60]
             elif line.startswith('SUMMARY:'):
-                summary = line.replace('SUMMARY:', '').strip()[:150]
+                summary = line.replace('SUMMARY:', '').strip()[:400]
         
         return headline, summary
         
@@ -525,7 +525,7 @@ async def summarize_article(content: str, title: str) -> tuple:
         logging.error(f"Error creating Inshorts content: {e}")
         # Fallback to truncated versions
         headline = title[:60]
-        summary = content[:150] + "..."
+        summary = content[:400] + "..."
         return headline, summary
 
 # API Routes
