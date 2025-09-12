@@ -644,31 +644,31 @@ function App() {
         ) : (
           <>
             {/* Stock Filters */}
-            <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-              <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <h2 className="text-lg font-semibold text-gray-900">Biotech & Pharma Stocks</h2>
-                  <div className="flex items-center bg-gray-100 rounded-xl p-1">
+            <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl border border-white/20 p-8 mb-8">
+              <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
+                <div className="flex items-center gap-6">
+                  <h2 className="text-2xl font-bold text-gray-900">Biotech & Pharma Stocks</h2>
+                  <div className="flex items-center bg-white/60 backdrop-blur-sm rounded-2xl p-2 shadow-lg border border-white/30">
                     <button
                       onClick={() => handleStockViewChange('all')}
-                      className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                        stockView === 'all' ? 'bg-white shadow-md text-blue-600' : 'text-gray-500'
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                        stockView === 'all' ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg' : 'text-gray-600 hover:text-blue-600'
                       }`}
                     >
                       All Stocks
                     </button>
                     <button
                       onClick={() => handleStockViewChange('gainers')}
-                      className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                        stockView === 'gainers' ? 'bg-white shadow-md text-green-600' : 'text-gray-500'
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                        stockView === 'gainers' ? 'bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg' : 'text-gray-600 hover:text-green-600'
                       }`}
                     >
                       Top Gainers
                     </button>
                     <button
                       onClick={() => handleStockViewChange('losers')}
-                      className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                        stockView === 'losers' ? 'bg-white shadow-md text-red-600' : 'text-gray-500'
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                        stockView === 'losers' ? 'bg-gradient-to-r from-red-500 to-rose-600 text-white shadow-lg' : 'text-gray-600 hover:text-red-600'
                       }`}
                     >
                       Top Losers
@@ -676,8 +676,9 @@ function App() {
                   </div>
                 </div>
                 
-                <div className="text-sm text-gray-500">
-                  Updated: {systemStatus ? getTimeSince(systemStatus.last_stock_update) : 'Loading...'}
+                <div className="flex items-center gap-2 text-sm text-gray-600 bg-blue-50 px-4 py-2 rounded-full">
+                  <Clock size={16} />
+                  <span>Updated: {systemStatus ? getTimeSince(systemStatus.last_stock_update) : 'Loading...'}</span>
                 </div>
               </div>
             </div>
