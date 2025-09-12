@@ -260,6 +260,16 @@ function App() {
             </button>
           </div>
 
+          {/* Clickable Summary at the top */}
+          <div 
+            onClick={() => window.open(article.url, '_blank')}
+            className="cursor-pointer hover:bg-blue-50 rounded-lg p-3 -m-3 mb-4 transition-colors group"
+          >
+            <p className="text-gray-700 leading-relaxed group-hover:text-blue-700 transition-colors">
+              {article.summary}
+            </p>
+          </div>
+
           <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
             <span className="flex items-center gap-1">
               <Calendar size={14} />
@@ -267,10 +277,6 @@ function App() {
             </span>
             <span>{article.source}</span>
           </div>
-
-          <p className="text-gray-700 leading-relaxed mb-4">
-            {article.summary}
-          </p>
 
           {article.keywords && article.keywords.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-4">
