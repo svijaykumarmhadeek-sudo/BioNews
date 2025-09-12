@@ -736,6 +736,59 @@ async def migrate_articles():
         logging.error(f"Error during migration: {e}")
         raise HTTPException(status_code=500, detail=f"Error during migration: {str(e)}")
 
+@api_router.post("/articles/clean-html")
+async def clean_html_in_articles():
+    """Clean HTML tags from existing article titles and content"""
+    try:
+        logging.info("Starting HTML cleanup for existing articles...")
+        
+        # Find all articles
+        articles_to_clean = await db.articles.find({}).to_list(length=None)
+        cleaned_count = 0
+        
+        for article_data in articles_to_clean:
+            try:
+                # Clean title
+                original_title = article_data.get("title", "")
+                clean_title = clean_html_text(original_title)
+                
+                # Clean content
+                original_content = article_data.get("content", "")
+                clean_content = clean_html_text(original_content)
+                
+                # Only update if there was HTML to clean
+                if original_title != clean_title or original_content != clean_content:
+                    # Generate new headline and summary with clean content
+                    headline, summary = await summarize_article(clean_content, clean_title)
+                    
+                    # Update the article
+                    await db.articles.update_one(
+                        {"_id": article_data["_id"]},
+                        {
+                            "$set": {
+                                "title": clean_title,
+                                "content": clean_content,
+                                "headline": headline,
+                                "summary": summary
+                            }
+                        }
+                    )
+                    cleaned_count += 1
+                    
+            except Exception as e:
+                logging.error(f"Error cleaning article {article_data.get('id', 'unknown')}: {e}")
+                continue
+        
+        logging.info(f"HTML cleanup completed: {cleaned_count} articles cleaned")
+        return {
+            "message": f"Cleaned HTML from {cleaned_count} articles",
+            "cleaned_count": cleaned_count
+        }
+        
+    except Exception as e:
+        logging.error(f"Error during HTML cleanup: {e}")
+        raise HTTPException(status_code=500, detail=f"Error during HTML cleanup: {str(e)}")
+
 @api_router.post("/articles/demo-summary")
 async def create_demo_summary():
     """Create a demo summary to show perfect Inshorts format"""
