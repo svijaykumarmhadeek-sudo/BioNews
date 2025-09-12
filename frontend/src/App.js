@@ -221,53 +221,54 @@ function App() {
     const categoryColor = CATEGORY_COLORS[article.category] || 'from-gray-500 to-gray-600';
 
     return (
-      <div className="bg-white border-b border-gray-200 last:border-b-0">
+      <div className="bg-gradient-to-r from-white via-white to-blue-50/30 border-b border-blue-100/50 last:border-b-0 hover:bg-gradient-to-r hover:from-blue-50/20 hover:via-white hover:to-indigo-50/30 transition-all duration-300">
         {/* Image Section */}
         {article.image_url && (
           <div className="relative h-64 overflow-hidden">
             <img
               src={article.image_url}
               alt={article.headline || article.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
               onError={(e) => {
                 e.target.style.display = 'none';
               }}
             />
-            <div className={`absolute top-4 left-4 px-3 py-1 rounded-full bg-gradient-to-r ${categoryColor} text-white text-sm font-medium flex items-center gap-1`}>
-              <IconComponent size={14} />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
+            <div className={`absolute top-6 left-6 px-4 py-2 rounded-full bg-gradient-to-r ${categoryColor} text-white text-sm font-semibold flex items-center gap-2 shadow-lg backdrop-blur-sm`}>
+              <IconComponent size={16} />
               {article.category}
             </div>
           </div>
         )}
         
         {/* Content Section */}
-        <div className="p-6">
+        <div className="p-8">
           {/* Clickable Headline */}
           <h2 
             onClick={() => window.open(article.url, '_blank')}
-            className="text-xl font-bold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors mb-3 leading-tight"
+            className="text-2xl font-bold text-gray-900 cursor-pointer hover:text-blue-600 transition-all duration-300 mb-4 leading-tight hover:transform hover:scale-[1.02]"
           >
             {article.headline || article.title}
           </h2>
 
           {/* Brief Summary */}
-          <p className="text-gray-700 text-base leading-relaxed mb-4">
+          <p className="text-gray-700 text-lg leading-relaxed mb-6 font-medium">
             {article.summary}
           </p>
 
           {/* Bottom Section */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4 text-sm text-gray-500">
-              <span className="flex items-center gap-1">
-                <Calendar size={14} />
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-6">
+              <span className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-full">
+                <Calendar size={16} />
                 {formatDate(article.published_at)}
               </span>
-              <span>{article.source}</span>
+              <span className="text-sm text-gray-600 bg-blue-50 px-3 py-2 rounded-full font-medium">{article.source}</span>
             </div>
             
             <button
               onClick={() => window.open(article.url, '_blank')}
-              className="flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors"
+              className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white px-6 py-3 rounded-full font-semibold text-sm transition-all duration-300 hover:from-blue-600 hover:to-indigo-700 hover:shadow-lg transform hover:scale-105"
             >
               Read Full Article
               <ChevronRight size={16} />
@@ -276,11 +277,11 @@ function App() {
 
           {/* Keywords */}
           {article.keywords && article.keywords.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-4">
+            <div className="flex flex-wrap gap-3">
               {article.keywords.slice(0, 4).map((keyword, index) => (
                 <span
                   key={index}
-                  className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full"
+                  className="px-3 py-2 bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-700 text-sm rounded-full font-medium border border-indigo-100"
                 >
                   {keyword}
                 </span>
