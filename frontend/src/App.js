@@ -311,45 +311,54 @@ function App() {
     const isPositive = stock.percent_change >= 0;
     const TrendIcon = isPositive ? TrendingUp : TrendingDown;
     
+    // Function to truncate company name elegantly
+    const truncateName = (name, maxLength = 16) => {
+      if (name.length <= maxLength) return name;
+      return name.substring(0, maxLength - 3) + '...';
+    };
+    
     return (
-      <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 p-6">
-        {/* Header with symbol and change */}
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-xl font-bold text-gray-900">{stock.symbol}</h3>
-            <p className="text-xs text-gray-500 truncate max-w-[120px]">{stock.name}</p>
+      <div className="bg-white rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-all duration-300 p-4 h-[200px] flex flex-col">
+        {/* Header - Symbol and Name */}
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1 min-w-0">
+            <h3 className="text-lg font-bold text-gray-900 mb-1">{stock.symbol}</h3>
+            <p className="text-xs text-gray-600 leading-tight">
+              {truncateName(stock.name, 20)}
+            </p>
           </div>
-          <div className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm font-semibold ${
+          {/* Fixed-width percentage badge */}
+          <div className={`flex items-center justify-center gap-1 px-2 py-1 rounded-md text-xs font-bold w-[60px] h-[24px] flex-shrink-0 ${
             isPositive 
               ? 'bg-green-100 text-green-700' 
               : 'bg-red-100 text-red-700'
           }`}>
-            <TrendIcon size={14} />
-            {stock.percent_change.toFixed(2)}%
+            <TrendIcon size={10} />
+            <span className="text-[10px]">{Math.abs(stock.percent_change).toFixed(1)}%</span>
           </div>
         </div>
 
-        {/* Main price display */}
-        <div className="mb-4">
-          <div className="text-2xl font-bold text-gray-900 mb-1">
+        {/* Main price - consistent height */}
+        <div className="mb-3 flex-1">
+          <div className="text-xl font-bold text-gray-900 mb-1">
             {formatPrice(stock.current_price)}
           </div>
-          <div className={`text-sm font-medium ${
+          <div className={`text-xs font-medium ${
             isPositive ? 'text-green-600' : 'text-red-600'
           }`}>
-            {isPositive ? '+' : ''}{formatPrice(stock.price_change)} today
+            {isPositive ? '+' : ''}{formatPrice(stock.price_change)}
           </div>
         </div>
 
-        {/* Bottom metrics */}
-        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+        {/* Bottom metrics - fixed height */}
+        <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-100 mt-auto">
           <div>
-            <p className="text-xs text-gray-500 mb-1">Volume</p>
-            <p className="text-sm font-semibold text-gray-900">{formatNumber(stock.volume)}</p>
+            <p className="text-[10px] text-gray-500 mb-1 uppercase tracking-wide">Volume</p>
+            <p className="text-xs font-semibold text-gray-900">{formatNumber(stock.volume)}</p>
           </div>
           <div>
-            <p className="text-xs text-gray-500 mb-1">Market Cap</p>
-            <p className="text-sm font-semibold text-gray-900">
+            <p className="text-[10px] text-gray-500 mb-1 uppercase tracking-wide">Market Cap</p>
+            <p className="text-xs font-semibold text-gray-900">
               {stock.market_cap ? `$${formatNumber(stock.market_cap)}` : 'N/A'}
             </p>
           </div>
