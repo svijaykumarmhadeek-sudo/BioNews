@@ -329,7 +329,7 @@ function App() {
           <div>
             <p className="text-sm text-gray-500">Market Cap</p>
             <p className="text-sm font-medium text-gray-700">
-              {stock.market_cap ? formatPrice(stock.market_cap) : 'N/A'}
+              {stock.market_cap ? `$${formatNumber(stock.market_cap)}` : 'N/A'}
             </p>
           </div>
         </div>
