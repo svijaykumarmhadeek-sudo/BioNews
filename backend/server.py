@@ -676,6 +676,47 @@ async def migrate_articles():
         logging.error(f"Error during migration: {e}")
         raise HTTPException(status_code=500, detail=f"Error during migration: {str(e)}")
 
+@api_router.post("/articles/update-summaries")
+async def update_all_summaries():
+    """Update all existing articles with longer summaries (350-400 chars)"""
+    try:
+        logging.info("Starting summary update to longer format...")
+        
+        # Find all articles
+        articles_to_update = await db.articles.find({}).to_list(length=None)
+        updated_count = 0
+        
+        for article_data in articles_to_update:
+            try:
+                # Generate new headline and longer summary
+                headline, summary = await summarize_article(article_data["content"], article_data["title"])
+                
+                # Update the article
+                await db.articles.update_one(
+                    {"_id": article_data["_id"]},
+                    {
+                        "$set": {
+                            "headline": headline,
+                            "summary": summary
+                        }
+                    }
+                )
+                updated_count += 1
+                
+            except Exception as e:
+                logging.error(f"Error updating article {article_data.get('id', 'unknown')}: {e}")
+                continue
+        
+        logging.info(f"Summary update completed: {updated_count} articles updated")
+        return {
+            "message": f"Updated {updated_count} articles with longer summaries",
+            "updated_count": updated_count
+        }
+        
+    except Exception as e:
+        logging.error(f"Error during summary update: {e}")
+        raise HTTPException(status_code=500, detail=f"Error during summary update: {str(e)}")
+
 @api_router.post("/articles/refresh")
 async def refresh_articles():
     """Fetch and store new articles from real sources"""
