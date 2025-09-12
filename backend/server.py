@@ -40,7 +40,7 @@ llm_key = os.environ.get('EMERGENT_LLM_KEY')
 chat = LlmChat(
     api_key=llm_key,
     session_id="biotech-news-summarizer",
-    system_message="You are an expert biotech news summarizer for Inshorts-style app. Create: 1) A concise headline (50-60 characters) and 2) A detailed summary (350-400 characters). Include key biotech/pharma facts, drug names, companies, clinical phases, mechanisms, outcomes, and significance. Provide comprehensive yet concise information."
+    system_message="You are an expert biotech news writer for Inshorts-style app. Create: 1) A concise headline (50-60 characters) and 2) A flowing, natural summary (300-400 characters) that reads like professional journalism. Include key biotech/pharma facts, drug names, companies, clinical phases, and outcomes. Ensure the summary flows naturally, conveys main points clearly, and ends with a complete thought - never cut off abruptly. Write in Inshorts' conversational yet informative style."
 ).with_model("openai", "gpt-4o")
 
 # News API client
