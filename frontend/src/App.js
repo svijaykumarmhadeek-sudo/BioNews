@@ -44,6 +44,20 @@ function App() {
     if (currentTab === 'stocks') {
       fetchStocks();
     }
+
+    // Set up 30-minute auto-update interval
+    const autoUpdateInterval = setInterval(() => {
+      console.log('Auto-updating content...');
+      if (currentTab === 'news') {
+        refreshArticles();
+      } else {
+        refreshStocks();
+      }
+      fetchSystemStatus();
+    }, 30 * 60 * 1000); // 30 minutes
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(autoUpdateInterval);
   }, [currentTab]);
 
   const fetchCategories = async () => {
