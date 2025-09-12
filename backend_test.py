@@ -136,17 +136,72 @@ class BiotechNewsAPITester:
         
         return self.run_test("Get Single Article", "GET", f"articles/{article_id}", 200)
 
+    def test_system_status(self):
+        """Test new system status endpoint"""
+        success, response = self.run_test("System Status", "GET", "status", 200)
+        if success:
+            required_fields = ['last_update', 'total_articles', 'articles_by_category']
+            missing_fields = [field for field in required_fields if field not in response]
+            if missing_fields:
+                self.log_test("Status Response Validation", False, f"Missing fields: {missing_fields}")
+            else:
+                print(f"   ✓ Last update: {response['last_update']}")
+                print(f"   ✓ Total articles: {response['total_articles']}")
+                print(f"   ✓ Articles by category: {response['articles_by_category']}")
+                return True, response
+        return success, response
+
     def test_refresh_articles(self):
-        """Test refreshing articles (this triggers LLM summarization)"""
-        print("\n🔄 Testing article refresh (this may take 30+ seconds due to LLM processing)...")
+        """Test refreshing articles (this triggers real news fetching and LLM summarization)"""
+        print("\n🔄 Testing article refresh with real news APIs (this may take 60+ seconds)...")
+        print("   This tests: PubMed, NewsAPI, ClinicalTrials.gov integration + LLM summarization")
         success, response = self.run_test("Refresh Articles", "POST", "articles/refresh", 200)
         if success:
-            if 'message' in response and 'total_fetched' in response:
+            required_fields = ['message', 'total_fetched', 'last_update']
+            missing_fields = [field for field in required_fields if field not in response]
+            if missing_fields:
+                self.log_test("Refresh Response Validation", False, f"Missing fields: {missing_fields}")
+            else:
                 print(f"   ✓ Refresh completed: {response['message']}")
                 print(f"   ✓ Total fetched: {response['total_fetched']}")
-            else:
-                self.log_test("Refresh Response Validation", False, "Missing expected response fields")
+                print(f"   ✓ Last update timestamp: {response['last_update']}")
+                return True, response
         return success, response
+
+    def test_real_news_integration(self):
+        """Test that articles are coming from real news sources"""
+        success, articles = self.test_get_articles()
+        if not success or not articles:
+            return False, {}
+        
+        # Check for real news sources
+        real_sources = set()
+        categories_found = set()
+        keywords_found = []
+        
+        for article in articles[:10]:  # Check first 10 articles
+            source = article.get('source', '')
+            category = article.get('category', '')
+            keywords = article.get('keywords', [])
+            
+            real_sources.add(source)
+            categories_found.add(category)
+            keywords_found.extend(keywords)
+        
+        # Expected real sources
+        expected_sources = ['PubMed', 'NewsAPI', 'ClinicalTrials.gov']
+        found_real_sources = [src for src in expected_sources if any(expected in source for expected in [src, src.lower()])]
+        
+        print(f"   ✓ Real sources found: {list(real_sources)}")
+        print(f"   ✓ Categories found: {list(categories_found)}")
+        print(f"   ✓ Sample keywords: {keywords_found[:10]}")
+        
+        if len(found_real_sources) > 0:
+            self.log_test("Real News Sources", True, f"Found sources from: {found_real_sources}")
+            return True, articles
+        else:
+            self.log_test("Real News Sources", False, f"No real news sources found. Sources: {list(real_sources)}")
+            return False, articles
 
     def test_search_articles(self):
         """Test searching articles"""
