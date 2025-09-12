@@ -298,42 +298,44 @@ function App() {
     const TrendIcon = isPositive ? TrendingUp : TrendingDown;
     
     return (
-      <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 p-8 hover:border-blue-200">
-        <div className="flex items-start justify-between mb-6">
-          <div className="flex-1 min-w-0">
-            <h3 className="text-2xl font-bold text-gray-900 truncate">{stock.symbol}</h3>
-            <p className="text-sm text-gray-600 truncate mt-1">{stock.name}</p>
+      <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 p-6">
+        {/* Header with symbol and change */}
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900">{stock.symbol}</h3>
+            <p className="text-xs text-gray-500 truncate max-w-[120px]">{stock.name}</p>
           </div>
-          <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold ml-2 flex-shrink-0 shadow-lg ${
+          <div className={`flex items-center gap-1 px-3 py-1 rounded-lg text-sm font-semibold ${
             isPositive 
-              ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white' 
-              : 'bg-gradient-to-r from-red-500 to-rose-500 text-white'
+              ? 'bg-green-100 text-green-700' 
+              : 'bg-red-100 text-red-700'
           }`}>
-            <TrendIcon size={16} />
+            <TrendIcon size={14} />
             {stock.percent_change.toFixed(2)}%
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-6">
-          <div className="min-w-0 bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-2xl border border-blue-100">
-            <p className="text-sm font-medium text-blue-600 mb-2">Current Price</p>
-            <p className="text-xl font-bold text-gray-900 truncate">{formatPrice(stock.current_price)}</p>
+        {/* Main price display */}
+        <div className="mb-4">
+          <div className="text-2xl font-bold text-gray-900 mb-1">
+            {formatPrice(stock.current_price)}
           </div>
-          <div className="min-w-0 bg-gradient-to-br from-purple-50 to-violet-50 p-4 rounded-2xl border border-purple-100">
-            <p className="text-sm font-medium text-purple-600 mb-2">Change</p>
-            <p className={`text-xl font-bold truncate ${
-              isPositive ? 'text-emerald-600' : 'text-red-600'
-            }`}>
-              {isPositive ? '+' : ''}{formatPrice(stock.price_change)}
-            </p>
+          <div className={`text-sm font-medium ${
+            isPositive ? 'text-green-600' : 'text-red-600'
+          }`}>
+            {isPositive ? '+' : ''}{formatPrice(stock.price_change)} today
           </div>
-          <div className="min-w-0 bg-gradient-to-br from-orange-50 to-amber-50 p-4 rounded-2xl border border-orange-100">
-            <p className="text-sm font-medium text-orange-600 mb-2">Volume</p>
-            <p className="text-lg font-bold text-gray-900 truncate">{formatNumber(stock.volume)}</p>
+        </div>
+
+        {/* Bottom metrics */}
+        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
+          <div>
+            <p className="text-xs text-gray-500 mb-1">Volume</p>
+            <p className="text-sm font-semibold text-gray-900">{formatNumber(stock.volume)}</p>
           </div>
-          <div className="min-w-0 bg-gradient-to-br from-emerald-50 to-green-50 p-4 rounded-2xl border border-emerald-100">
-            <p className="text-sm font-medium text-emerald-600 mb-2">Market Cap</p>
-            <p className="text-lg font-bold text-gray-900 truncate">
+          <div>
+            <p className="text-xs text-gray-500 mb-1">Market Cap</p>
+            <p className="text-sm font-semibold text-gray-900">
               {stock.market_cap ? `$${formatNumber(stock.market_cap)}` : 'N/A'}
             </p>
           </div>
