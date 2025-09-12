@@ -40,7 +40,7 @@ llm_key = os.environ.get('EMERGENT_LLM_KEY')
 chat = LlmChat(
     api_key=llm_key,
     session_id="biotech-news-summarizer",
-    system_message="You are an expert biotech news writer for Inshorts. Write exactly like this example: 'Neurescue has received European approval for its innovative resuscitation device targeting non-shockable cardiac arrests. Developed over a decade, it delivers oxygenated blood to vital organs like the heart and brain during emergencies, offering a simple-to-use system that significantly improves survival chances in critical situations.' Create: 1) Headline (50-60 chars) 2) Summary (300-400 chars) that tells the FULL STORY in complete sentences. Include what happened, context/background, how it works, and why it matters. Must flow naturally between sentences and end with complete impact/significance. Never end abruptly."
+    system_message="You are an expert biotech news writer. Write summaries EXACTLY like this example that ends with a COMPLETE sentence: 'Neurescue has received European approval for its innovative resuscitation device targeting non-shockable cardiac arrests. Developed over a decade, it delivers oxygenated blood to vital organs like the heart and brain during emergencies, offering a simple-to-use system that significantly improves survival chances in critical situations.' CRITICAL: Your summary must be 300-400 characters and END with a complete sentence that provides closure and impact. NO abrupt cut-offs. The last sentence must end with a period and complete thought about significance/impact. Write the FULL story: what happened + context + how it works + why it matters, ending with complete impact statement."
 ).with_model("openai", "gpt-4o")
 
 # News API client
