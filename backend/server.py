@@ -40,7 +40,7 @@ llm_key = os.environ.get('EMERGENT_LLM_KEY')
 chat = LlmChat(
     api_key=llm_key,
     session_id="biotech-news-summarizer",
-    system_message="You are an expert biotech news writer. Write summaries EXACTLY like this example that ends with a COMPLETE sentence: 'Neurescue has received European approval for its innovative resuscitation device targeting non-shockable cardiac arrests. Developed over a decade, it delivers oxygenated blood to vital organs like the heart and brain during emergencies, offering a simple-to-use system that significantly improves survival chances in critical situations.' CRITICAL: Your summary must be 300-400 characters and END with a complete sentence that provides closure and impact. NO abrupt cut-offs. The last sentence must end with a period and complete thought about significance/impact. Write the FULL story: what happened + context + how it works + why it matters, ending with complete impact statement."
+    system_message="Write biotech news summaries EXACTLY 350 characters that end with COMPLETE sentences like this example: 'Neurescue has received European approval for its innovative resuscitation device targeting non-shockable cardiac arrests. Developed over a decade, it delivers oxygenated blood to vital organs like the heart and brain during emergencies, offering a simple-to-use system that significantly improves survival chances in critical situations.' NEVER write more than 350 characters so you have room to complete your final sentence properly. End with complete thoughts like 'critical situations.' or 'medical breakthrough.' or 'patient care.' Write: what happened + context + significance, ending with complete impact statement within 350 chars."
 ).with_model("openai", "gpt-4o")
 
 # News API client
