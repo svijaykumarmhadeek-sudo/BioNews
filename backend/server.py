@@ -503,29 +503,46 @@ async def fetch_real_biotech_news() -> List[Dict]:
         return []
 
 async def summarize_article(content: str, title: str) -> tuple:
-    """Create Inshorts-style headline and summary exactly like the example"""
+    """Create Inshorts-style headline and summary with complete endings"""
     try:
-        user_message = UserMessage(text=f"Write EXACTLY like this Inshorts example:\n\n'Neurescue has received European approval for its innovative resuscitation device targeting non-shockable cardiac arrests. Developed over a decade, it delivers oxygenated blood to vital organs like the heart and brain during emergencies, offering a simple-to-use system that significantly improves survival chances in critical situations.'\n\nFor this biotech article:\nTitle: {title}\nContent: {content}\n\nWrite:\n1. Headline (50-60 chars)\n2. Summary (300-400 chars) following the EXACT pattern: What happened + Background/context + How it works/details + Why it matters/impact. Must be complete sentences that flow naturally and end with significance/impact.\n\nFormat: HEADLINE: [headline]\nSUMMARY: [summary]")
+        user_message = UserMessage(text=f"Write a biotech news summary EXACTLY like this example that ends with a COMPLETE sentence:\n\n'Neurescue has received European approval for its innovative resuscitation device targeting non-shockable cardiac arrests. Developed over a decade, it delivers oxygenated blood to vital organs like the heart and brain during emergencies, offering a simple-to-use system that significantly improves survival chances in critical situations.'\n\nNotice how it ends with 'critical situations.' - a complete thought with impact.\n\nFor this article:\nTitle: {title}\nContent: {content}\n\nWrite:\n1. Headline (50-60 chars)\n2. Summary (EXACTLY 300-400 chars) that tells the complete story and MUST end with a full sentence that provides closure and impact. NO cut-offs like 'emergency care,' - end with complete thoughts like 'critical situations.' or 'medical breakthrough.' or 'patient outcomes.'\n\nStructure: What happened + Context/background + How it works + Complete impact statement.\n\nFormat: HEADLINE: [headline]\nSUMMARY: [summary]")
         response = await chat.send_message(user_message)
         
         # Parse the response
         lines = response.strip().split('\n')
         headline = title[:60]  # Fallback
-        summary = content[:400] + "..."  # Fallback
+        summary = content[:400]  # Fallback
         
         for line in lines:
             if line.startswith('HEADLINE:'):
                 headline = line.replace('HEADLINE:', '').strip()[:60]
             elif line.startswith('SUMMARY:'):
-                summary = line.replace('SUMMARY:', '').strip()[:400]
+                raw_summary = line.replace('SUMMARY:', '').strip()
+                
+                # Ensure summary ends with complete sentence
+                if len(raw_summary) > 400:
+                    # Find the last complete sentence within 400 chars
+                    truncated = raw_summary[:400]
+                    last_period = truncated.rfind('.')
+                    if last_period > 300:  # Ensure we have at least 300 chars
+                        summary = truncated[:last_period + 1]
+                    else:
+                        summary = raw_summary[:400]
+                else:
+                    summary = raw_summary
         
         return headline, summary
         
     except Exception as e:
         logging.error(f"Error creating Inshorts content: {e}")
-        # Fallback to truncated versions
+        # Better fallback - ensure complete sentence
         headline = title[:60]
-        summary = content[:400] + "..."
+        truncated = content[:350]
+        last_period = truncated.rfind('.')
+        if last_period > 200:
+            summary = truncated[:last_period + 1]
+        else:
+            summary = truncated + "."
         return headline, summary
 
 # API Routes
