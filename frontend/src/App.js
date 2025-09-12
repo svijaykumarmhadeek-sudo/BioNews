@@ -541,38 +541,71 @@ function App() {
           <>
             {/* Search and Filters */}
             <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl border border-white/20 p-8 mb-8">
-              <div className="flex flex-col lg:flex-row gap-6">
+              <div className="flex flex-col gap-6">
                 {/* Search */}
-                <div className="flex-1">
-                  <div className="relative">
-                    <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
-                      <Search className="text-blue-400" size={22} />
+                <div className="flex flex-col lg:flex-row gap-6">
+                  <div className="flex-1">
+                    <div className="relative">
+                      <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
+                        <Search className="text-blue-400" size={22} />
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Search biotech news, drugs, companies..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && searchArticles()}
+                        className="w-full pl-14 pr-6 py-4 bg-white/60 border border-blue-100 rounded-2xl focus:ring-4 focus:ring-blue-200 focus:border-blue-400 transition-all duration-300 placeholder-gray-500 font-medium shadow-inner"
+                      />
                     </div>
-                    <input
-                      type="text"
-                      placeholder="Search biotech news, drugs, companies..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && searchArticles()}
-                      className="w-full pl-14 pr-6 py-4 bg-white/60 border border-blue-100 rounded-2xl focus:ring-4 focus:ring-blue-200 focus:border-blue-400 transition-all duration-300 placeholder-gray-500 font-medium shadow-inner"
-                    />
+                  </div>
+
+                  {/* Category Filter */}
+                  <div className="flex items-center gap-4">
+                    <select
+                      value={selectedCategory}
+                      onChange={(e) => handleCategoryChange(e.target.value)}
+                      className="px-6 py-4 bg-white/60 border border-blue-100 rounded-2xl focus:ring-4 focus:ring-blue-200 focus:border-blue-400 transition-all duration-300 font-medium shadow-inner"
+                    >
+                      <option value="">All Categories</option>
+                      {categories.map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
-                {/* Category Filter */}
-                <div className="flex items-center gap-4">
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => handleCategoryChange(e.target.value)}
-                    className="px-6 py-4 bg-white/60 border border-blue-100 rounded-2xl focus:ring-4 focus:ring-blue-200 focus:border-blue-400 transition-all duration-300 font-medium shadow-inner"
+                {/* Topic Browsing - Category Pills */}
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={() => handleCategoryChange('')}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                      selectedCategory === '' 
+                        ? 'bg-blue-500 text-white shadow-lg' 
+                        : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                    }`}
                   >
-                    <option value="">All Categories</option>
-                    {categories.map((category) => (
-                      <option key={category} value={category}>
+                    All Topics
+                  </button>
+                  {categories.map((category) => {
+                    const IconComponent = CATEGORY_ICONS[category] || BookOpen;
+                    return (
+                      <button
+                        key={category}
+                        onClick={() => handleCategoryChange(category)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
+                          selectedCategory === category 
+                            ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg' 
+                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        <IconComponent size={16} />
                         {category}
-                      </option>
-                    ))}
-                  </select>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
