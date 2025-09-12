@@ -128,7 +128,7 @@ last_stock_update = datetime.now(timezone.utc)
 class Article(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     title: str
-    headline: str  # Concise 50-60 char headline
+    headline: Optional[str] = None  # Concise 50-60 char headline
     summary: str  # Brief 120-150 char summary
     content: str
     category: str
