@@ -503,9 +503,9 @@ async def fetch_real_biotech_news() -> List[Dict]:
         return []
 
 async def summarize_article(content: str, title: str) -> tuple:
-    """Use LLM to create Inshorts-style headline and summary"""
+    """Create Inshorts-style headline and summary exactly like the example"""
     try:
-        user_message = UserMessage(text=f"Create Inshorts-style content for this biotech article:\n\nTitle: {title}\nContent: {content}\n\nGenerate:\n1. Concise headline (50-60 characters)\n2. Natural, flowing summary (300-400 characters)\n\nFor the summary: Write like a professional journalist. Include key details (drug names, companies, clinical phases, outcomes) but ensure it flows naturally and ends with a complete thought. No abrupt cut-offs. Make it conversational yet informative, exactly like Inshorts style.\n\nFormat: HEADLINE: [headline]\nSUMMARY: [summary]")
+        user_message = UserMessage(text=f"Write EXACTLY like this Inshorts example:\n\n'Neurescue has received European approval for its innovative resuscitation device targeting non-shockable cardiac arrests. Developed over a decade, it delivers oxygenated blood to vital organs like the heart and brain during emergencies, offering a simple-to-use system that significantly improves survival chances in critical situations.'\n\nFor this biotech article:\nTitle: {title}\nContent: {content}\n\nWrite:\n1. Headline (50-60 chars)\n2. Summary (300-400 chars) following the EXACT pattern: What happened + Background/context + How it works/details + Why it matters/impact. Must be complete sentences that flow naturally and end with significance/impact.\n\nFormat: HEADLINE: [headline]\nSUMMARY: [summary]")
         response = await chat.send_message(user_message)
         
         # Parse the response
