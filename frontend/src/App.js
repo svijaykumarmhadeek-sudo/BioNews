@@ -523,19 +523,21 @@ function App() {
         {currentTab === 'news' ? (
           <>
             {/* Search and Filters */}
-            <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-              <div className="flex flex-col lg:flex-row gap-4">
+            <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl border border-white/20 p-8 mb-8">
+              <div className="flex flex-col lg:flex-row gap-6">
                 {/* Search */}
                 <div className="flex-1">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                    <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
+                      <Search className="text-blue-400" size={22} />
+                    </div>
                     <input
                       type="text"
                       placeholder="Search biotech news, drugs, companies..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && searchArticles()}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full pl-14 pr-6 py-4 bg-white/60 border border-blue-100 rounded-2xl focus:ring-4 focus:ring-blue-200 focus:border-blue-400 transition-all duration-300 placeholder-gray-500 font-medium shadow-inner"
                     />
                   </div>
                 </div>
@@ -545,7 +547,7 @@ function App() {
                   <select
                     value={selectedCategory}
                     onChange={(e) => handleCategoryChange(e.target.value)}
-                    className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="px-6 py-4 bg-white/60 border border-blue-100 rounded-2xl focus:ring-4 focus:ring-blue-200 focus:border-blue-400 transition-all duration-300 font-medium shadow-inner"
                   >
                     <option value="">All Categories</option>
                     {categories.map((category) => (
