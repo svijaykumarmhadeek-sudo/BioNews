@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Grid, List, Calendar, ExternalLink, RefreshCw, Heart, BookOpen, Microscope, Pill, Building2, Shield, Clock, Activity, TrendingUp, TrendingDown, DollarSign, BarChart3 } from 'lucide-react';
+import { Search, Filter, Calendar, ExternalLink, RefreshCw, Heart, BookOpen, Microscope, Pill, Building2, Shield, Clock, Activity, TrendingUp, TrendingDown, DollarSign, BarChart3, ChevronRight } from 'lucide-react';
 import './App.css';
 import axios from 'axios';
 
@@ -30,12 +30,10 @@ function App() {
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState('card'); // 'card' or 'table'
   const [currentTab, setCurrentTab] = useState('news'); // 'news' or 'stocks'
   const [stockView, setStockView] = useState('all'); // 'all', 'gainers', 'losers'
   const [loading, setLoading] = useState(true);
   const [stocksLoading, setStocksLoading] = useState(false);
-  const [expandedCards, setExpandedCards] = useState(new Set());
   const [systemStatus, setSystemStatus] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -172,16 +170,6 @@ function App() {
     fetchStocks(view);
   };
 
-  const toggleCardExpansion = (articleId) => {
-    const newExpanded = new Set(expandedCards);
-    if (newExpanded.has(articleId)) {
-      newExpanded.delete(articleId);
-    } else {
-      newExpanded.add(articleId);
-    }
-    setExpandedCards(newExpanded);
-  };
-
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -223,18 +211,19 @@ function App() {
     return num?.toString() || '0';
   };
 
-  const ArticleCard = ({ article }) => {
-    const isExpanded = expandedCards.has(article.id);
+  // Inshorts-style Article Card
+  const InshortsCard = ({ article }) => {
     const IconComponent = CATEGORY_ICONS[article.category] || BookOpen;
     const categoryColor = CATEGORY_COLORS[article.category] || 'from-gray-500 to-gray-600';
 
     return (
-      <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
+      <div className="bg-white border-b border-gray-200 last:border-b-0">
+        {/* Image Section */}
         {article.image_url && (
-          <div className="relative h-48 overflow-hidden">
+          <div className="relative h-64 overflow-hidden">
             <img
               src={article.image_url}
-              alt={article.title}
+              alt={article.headline || article.title}
               className="w-full h-full object-cover"
               onError={(e) => {
                 e.target.style.display = 'none';
@@ -247,40 +236,44 @@ function App() {
           </div>
         )}
         
+        {/* Content Section */}
         <div className="p-6">
-          <div className="flex items-start justify-between mb-3">
-            <h2 className="text-xl font-bold text-gray-900 line-clamp-2 leading-tight">
-              {article.title}
-            </h2>
+          {/* Clickable Headline */}
+          <h2 
+            onClick={() => window.open(article.url, '_blank')}
+            className="text-xl font-bold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors mb-3 leading-tight"
+          >
+            {article.headline || article.title}
+          </h2>
+
+          {/* Brief Summary */}
+          <p className="text-gray-700 text-base leading-relaxed mb-4">
+            {article.summary}
+          </p>
+
+          {/* Bottom Section */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4 text-sm text-gray-500">
+              <span className="flex items-center gap-1">
+                <Calendar size={14} />
+                {formatDate(article.published_at)}
+              </span>
+              <span>{article.source}</span>
+            </div>
+            
             <button
               onClick={() => window.open(article.url, '_blank')}
-              className="text-blue-500 hover:text-blue-700 transition-colors ml-2 flex-shrink-0"
+              className="flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors"
             >
-              <ExternalLink size={18} />
+              Read Full Article
+              <ChevronRight size={16} />
             </button>
           </div>
 
-          {/* Clickable Summary at the top */}
-          <div 
-            onClick={() => window.open(article.url, '_blank')}
-            className="cursor-pointer hover:bg-blue-50 rounded-lg p-3 -m-3 mb-4 transition-colors group"
-          >
-            <p className="text-gray-700 leading-relaxed group-hover:text-blue-700 transition-colors">
-              {article.summary}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
-            <span className="flex items-center gap-1">
-              <Calendar size={14} />
-              {formatDate(article.published_at)}
-            </span>
-            <span>{article.source}</span>
-          </div>
-
+          {/* Keywords */}
           {article.keywords && article.keywords.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-4">
-              {article.keywords.map((keyword, index) => (
+            <div className="flex flex-wrap gap-2 mt-4">
+              {article.keywords.slice(0, 4).map((keyword, index) => (
                 <span
                   key={index}
                   className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full"
@@ -288,22 +281,6 @@ function App() {
                   {keyword}
                 </span>
               ))}
-            </div>
-          )}
-
-          <button
-            onClick={() => toggleCardExpansion(article.id)}
-            className="w-full py-2 text-blue-600 hover:text-blue-800 font-medium transition-colors"
-          >
-            {isExpanded ? 'Show Less' : 'Read More'}
-          </button>
-
-          {isExpanded && (
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <h3 className="font-semibold text-gray-900 mb-2">Full Article</h3>
-              <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                {article.content}
-              </p>
             </div>
           )}
         </div>
@@ -438,10 +415,10 @@ function App() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl">
@@ -449,7 +426,7 @@ function App() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">BioNews</h1>
-                <p className="text-sm text-gray-500">Real-time Biotech News & Stock Data</p>
+                <p className="text-sm text-gray-500">Biotech news in 60 seconds</p>
               </div>
             </div>
             
@@ -491,7 +468,7 @@ function App() {
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Status Bar */}
         <StatusBar />
 
@@ -507,7 +484,7 @@ function App() {
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
                     <input
                       type="text"
-                      placeholder="Search articles, keywords, compounds..."
+                      placeholder="Search biotech news, drugs, companies..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && searchArticles()}
@@ -530,36 +507,16 @@ function App() {
                       </option>
                     ))}
                   </select>
-
-                  {/* View Toggle */}
-                  <div className="flex items-center bg-gray-100 rounded-xl p-1">
-                    <button
-                      onClick={() => setViewMode('card')}
-                      className={`p-2 rounded-lg transition-colors ${
-                        viewMode === 'card' ? 'bg-white shadow-md text-blue-600' : 'text-gray-500'
-                      }`}
-                    >
-                      <Grid size={18} />
-                    </button>
-                    <button
-                      onClick={() => setViewMode('table')}
-                      className={`p-2 rounded-lg transition-colors ${
-                        viewMode === 'table' ? 'bg-white shadow-md text-blue-600' : 'text-gray-500'
-                      }`}
-                    >
-                      <List size={18} />
-                    </button>
-                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Articles Content */}
+            {/* Inshorts-style News Feed */}
             {loading ? (
               <div className="flex items-center justify-center py-20">
                 <div className="flex items-center gap-3 text-blue-600">
                   <RefreshCw size={24} className="animate-spin" />
-                  <span className="text-lg font-medium">Loading latest articles...</span>
+                  <span className="text-lg font-medium">Loading latest news...</span>
                 </div>
               </div>
             ) : articles.length === 0 ? (
@@ -569,9 +526,9 @@ function App() {
                 <p className="text-gray-500">Try adjusting your search or filter criteria, or refresh to get the latest articles.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {articles.map((article) => (
-                  <ArticleCard key={article.id} article={article} />
+              <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+                {articles.map((article, index) => (
+                  <InshortsCard key={article.id} article={article} />
                 ))}
               </div>
             )}
