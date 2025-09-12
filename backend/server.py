@@ -288,6 +288,28 @@ async def fetch_rss_feeds() -> List[Dict]:
     logging.info(f"Fetched {len(articles)} articles from RSS feeds")
     return articles
 
+def clean_html_text(text: str) -> str:
+    """Clean HTML tags and decode entities from text"""
+    if not text:
+        return ""
+    
+    # Use BeautifulSoup to clean HTML tags and decode entities
+    soup = BeautifulSoup(text, 'html.parser')
+    clean_text = soup.get_text().strip()
+    
+    # Replace common HTML entities that might slip through
+    clean_text = clean_text.replace('&amp;', '&')
+    clean_text = clean_text.replace('&lt;', '<')
+    clean_text = clean_text.replace('&gt;', '>')
+    clean_text = clean_text.replace('&quot;', '"')
+    clean_text = clean_text.replace('&#39;', "'")
+    clean_text = clean_text.replace('&nbsp;', ' ')
+    
+    # Remove extra whitespace
+    clean_text = ' '.join(clean_text.split())
+    
+    return clean_text
+
 def get_feed_image(entry) -> str:
     """Extract image from RSS entry"""
     default_images = [
