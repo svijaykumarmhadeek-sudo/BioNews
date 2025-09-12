@@ -311,22 +311,11 @@ function App() {
     const isPositive = stock.percent_change >= 0;
     const TrendIcon = isPositive ? TrendingUp : TrendingDown;
     
-    // Function to truncate company name elegantly
-    const truncateName = (name, maxLength = 16) => {
-      if (name.length <= maxLength) return name;
-      return name.substring(0, maxLength - 3) + '...';
-    };
-    
     return (
-      <div className="bg-white rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-all duration-300 p-4 h-[200px] flex flex-col">
-        {/* Header - Symbol and Name */}
+      <div className="bg-white rounded-xl shadow-md border border-gray-200 hover:shadow-lg transition-all duration-300 p-4 h-[220px] flex flex-col">
+        {/* Header - Symbol and Percentage */}
         <div className="flex items-start justify-between mb-3">
-          <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-bold text-gray-900 mb-1">{stock.symbol}</h3>
-            <p className="text-xs text-gray-600 leading-tight">
-              {truncateName(stock.name, 20)}
-            </p>
-          </div>
+          <h3 className="text-lg font-bold text-gray-900">{stock.symbol}</h3>
           {/* Fixed-width percentage badge */}
           <div className={`flex items-center justify-center gap-1 px-2 py-1 rounded-md text-xs font-bold w-[60px] h-[24px] flex-shrink-0 ${
             isPositive 
@@ -338,7 +327,14 @@ function App() {
           </div>
         </div>
 
-        {/* Main price - consistent height */}
+        {/* Full Company Name - Multi-line with proper spacing */}
+        <div className="mb-3 h-[32px] flex items-start">
+          <p className="text-xs text-gray-600 leading-tight line-clamp-2 font-medium">
+            {stock.name}
+          </p>
+        </div>
+
+        {/* Main price */}
         <div className="mb-3 flex-1">
           <div className="text-xl font-bold text-gray-900 mb-1">
             {formatPrice(stock.current_price)}
