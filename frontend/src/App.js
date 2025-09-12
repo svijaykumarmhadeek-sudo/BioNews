@@ -409,7 +409,7 @@ function App() {
       <div className="flex items-center justify-center mb-8">
         <div className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full text-white shadow-lg">
           <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
-          <span className="font-medium">Real-time updates • RSS feeds • Stock data</span>
+          <span className="font-medium">Auto-updates every 30 minutes • RSS feeds • Stock data</span>
         </div>
       </div>
 
