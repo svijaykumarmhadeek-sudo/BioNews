@@ -299,11 +299,11 @@ function App() {
     return (
       <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 p-6">
         <div className="flex items-start justify-between mb-4">
-          <div>
-            <h3 className="text-xl font-bold text-gray-900">{stock.symbol}</h3>
-            <p className="text-sm text-gray-600 line-clamp-1">{stock.name}</p>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-xl font-bold text-gray-900 truncate">{stock.symbol}</h3>
+            <p className="text-sm text-gray-600 truncate">{stock.name}</p>
           </div>
-          <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium ${
+          <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium ml-2 flex-shrink-0 ${
             isPositive 
               ? 'bg-green-100 text-green-800' 
               : 'bg-red-100 text-red-800'
@@ -314,25 +314,25 @@ function App() {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div>
+          <div className="min-w-0">
             <p className="text-sm text-gray-500">Current Price</p>
-            <p className="text-lg font-semibold text-gray-900">{formatPrice(stock.current_price)}</p>
+            <p className="text-lg font-semibold text-gray-900 truncate">{formatPrice(stock.current_price)}</p>
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-sm text-gray-500">Change</p>
-            <p className={`text-lg font-semibold ${
+            <p className={`text-lg font-semibold truncate ${
               isPositive ? 'text-green-600' : 'text-red-600'
             }`}>
               {isPositive ? '+' : ''}{formatPrice(stock.price_change)}
             </p>
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-sm text-gray-500">Volume</p>
-            <p className="text-sm font-medium text-gray-700">{formatNumber(stock.volume)}</p>
+            <p className="text-sm font-medium text-gray-700 truncate">{formatNumber(stock.volume)}</p>
           </div>
-          <div>
+          <div className="min-w-0">
             <p className="text-sm text-gray-500">Market Cap</p>
-            <p className="text-sm font-medium text-gray-700">
+            <p className="text-sm font-medium text-gray-700 truncate">
               {stock.market_cap ? `$${formatNumber(stock.market_cap)}` : 'N/A'}
             </p>
           </div>
