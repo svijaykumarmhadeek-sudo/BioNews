@@ -676,6 +676,28 @@ async def migrate_articles():
         logging.error(f"Error during migration: {e}")
         raise HTTPException(status_code=500, detail=f"Error during migration: {str(e)}")
 
+@api_router.post("/articles/demo-summary")
+async def create_demo_summary():
+    """Create a demo summary to show perfect Inshorts format"""
+    try:
+        # Sample biotech news for demo
+        sample_title = "Takeda names new US president as pharma giant expands operations"
+        sample_content = "Takeda Pharmaceutical has appointed Rhona Pacheco, former Eli Lilly executive, as president of US operations. The appointment comes as the Japanese pharma giant looks to strengthen its presence in the American market following recent FDA approvals for its rare disease portfolio. Pacheco brings over 20 years of experience in pharmaceutical leadership roles."
+        
+        # Generate perfect Inshorts-style content
+        headline, summary = await summarize_article(sample_content, sample_title)
+        
+        return {
+            "demo_headline": headline,
+            "demo_summary": summary,
+            "summary_length": len(summary),
+            "example_format": "Neurescue has received European approval for its innovative resuscitation device targeting non-shockable cardiac arrests. Developed over a decade, it delivers oxygenated blood to vital organs like the heart and brain during emergencies, offering a simple-to-use system that significantly improves survival chances in critical situations."
+        }
+        
+    except Exception as e:
+        logging.error(f"Error creating demo summary: {e}")
+        raise HTTPException(status_code=500, detail=f"Error creating demo: {str(e)}")
+
 @api_router.post("/articles/update-summaries")
 async def update_all_summaries():
     """Update all existing articles with longer summaries (350-400 chars)"""
