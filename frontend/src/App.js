@@ -462,38 +462,40 @@ function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Header */}
-      <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl">
-                <Microscope className="w-6 h-6 text-white" />
+      <header className="bg-white/90 backdrop-blur-lg shadow-lg border-b border-white/20 sticky top-0 z-50">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-20">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 rounded-2xl shadow-lg">
+                <Microscope className="w-8 h-8 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">BioNews</h1>
-                <p className="text-sm text-gray-500">Biotech news in 60 seconds</p>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  BioNews
+                </h1>
+                <p className="text-sm text-gray-600 font-medium">Biotech news in 60 seconds</p>
               </div>
             </div>
             
             {/* Tab Navigation */}
-            <div className="flex items-center gap-4">
-              <div className="flex items-center bg-gray-100 rounded-xl p-1">
+            <div className="flex items-center gap-6">
+              <div className="flex items-center bg-white/60 backdrop-blur-sm rounded-2xl p-2 shadow-lg border border-white/30">
                 <button
                   onClick={() => setCurrentTab('news')}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
                     currentTab === 'news' 
-                      ? 'bg-white shadow-md text-blue-600' 
-                      : 'text-gray-500 hover:text-gray-700'
+                      ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg transform scale-105' 
+                      : 'text-gray-600 hover:text-blue-600 hover:bg-white/50'
                   }`}
                 >
                   News
                 </button>
                 <button
                   onClick={() => setCurrentTab('stocks')}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
                     currentTab === 'stocks' 
-                      ? 'bg-white shadow-md text-blue-600' 
-                      : 'text-gray-500 hover:text-gray-700'
+                      ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg transform scale-105' 
+                      : 'text-gray-600 hover:text-blue-600 hover:bg-white/50'
                   }`}
                 >
                   Stocks
@@ -503,9 +505,9 @@ function App() {
               <button
                 onClick={currentTab === 'news' ? refreshArticles : refreshStocks}
                 disabled={refreshing}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors disabled:opacity-50"
+                className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-2xl hover:from-emerald-600 hover:to-green-600 transition-all duration-300 disabled:opacity-50 shadow-lg font-semibold transform hover:scale-105"
               >
-                <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+                <RefreshCw size={18} className={refreshing ? 'animate-spin' : ''} />
                 {refreshing ? 'Updating...' : 'Refresh'}
               </button>
             </div>
