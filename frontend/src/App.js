@@ -298,42 +298,42 @@ function App() {
     const TrendIcon = isPositive ? TrendingUp : TrendingDown;
     
     return (
-      <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 p-6">
-        <div className="flex items-start justify-between mb-4">
+      <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 p-8 hover:border-blue-200">
+        <div className="flex items-start justify-between mb-6">
           <div className="flex-1 min-w-0">
-            <h3 className="text-xl font-bold text-gray-900 truncate">{stock.symbol}</h3>
-            <p className="text-sm text-gray-600 truncate">{stock.name}</p>
+            <h3 className="text-2xl font-bold text-gray-900 truncate">{stock.symbol}</h3>
+            <p className="text-sm text-gray-600 truncate mt-1">{stock.name}</p>
           </div>
-          <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium ml-2 flex-shrink-0 ${
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold ml-2 flex-shrink-0 shadow-lg ${
             isPositive 
-              ? 'bg-green-100 text-green-800' 
-              : 'bg-red-100 text-red-800'
+              ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white' 
+              : 'bg-gradient-to-r from-red-500 to-rose-500 text-white'
           }`}>
-            <TrendIcon size={14} />
+            <TrendIcon size={16} />
             {stock.percent_change.toFixed(2)}%
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="min-w-0">
-            <p className="text-sm text-gray-500">Current Price</p>
-            <p className="text-lg font-semibold text-gray-900 truncate">{formatPrice(stock.current_price)}</p>
+        <div className="grid grid-cols-2 gap-6">
+          <div className="min-w-0 bg-gradient-to-br from-blue-50 to-indigo-50 p-4 rounded-2xl border border-blue-100">
+            <p className="text-sm font-medium text-blue-600 mb-2">Current Price</p>
+            <p className="text-xl font-bold text-gray-900 truncate">{formatPrice(stock.current_price)}</p>
           </div>
-          <div className="min-w-0">
-            <p className="text-sm text-gray-500">Change</p>
-            <p className={`text-lg font-semibold truncate ${
-              isPositive ? 'text-green-600' : 'text-red-600'
+          <div className="min-w-0 bg-gradient-to-br from-purple-50 to-violet-50 p-4 rounded-2xl border border-purple-100">
+            <p className="text-sm font-medium text-purple-600 mb-2">Change</p>
+            <p className={`text-xl font-bold truncate ${
+              isPositive ? 'text-emerald-600' : 'text-red-600'
             }`}>
               {isPositive ? '+' : ''}{formatPrice(stock.price_change)}
             </p>
           </div>
-          <div className="min-w-0">
-            <p className="text-sm text-gray-500">Volume</p>
-            <p className="text-sm font-medium text-gray-700 truncate">{formatNumber(stock.volume)}</p>
+          <div className="min-w-0 bg-gradient-to-br from-orange-50 to-amber-50 p-4 rounded-2xl border border-orange-100">
+            <p className="text-sm font-medium text-orange-600 mb-2">Volume</p>
+            <p className="text-lg font-bold text-gray-900 truncate">{formatNumber(stock.volume)}</p>
           </div>
-          <div className="min-w-0">
-            <p className="text-sm text-gray-500">Market Cap</p>
-            <p className="text-sm font-medium text-gray-700 truncate">
+          <div className="min-w-0 bg-gradient-to-br from-emerald-50 to-green-50 p-4 rounded-2xl border border-emerald-100">
+            <p className="text-sm font-medium text-emerald-600 mb-2">Market Cap</p>
+            <p className="text-lg font-bold text-gray-900 truncate">
               {stock.market_cap ? `$${formatNumber(stock.market_cap)}` : 'N/A'}
             </p>
           </div>
