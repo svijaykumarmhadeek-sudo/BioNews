@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Grid, List, Calendar, ExternalLink, RefreshCw, Heart, BookOpen, Microscope, Pill, Building2, Shield, Clock, Activity } from 'lucide-react';
+import { Search, Filter, Grid, List, Calendar, ExternalLink, RefreshCw, Heart, BookOpen, Microscope, Pill, Building2, Shield, Clock, Activity, TrendingUp, TrendingDown, DollarSign, BarChart3 } from 'lucide-react';
 import './App.css';
 import axios from 'axios';
 
@@ -26,11 +26,15 @@ const CATEGORY_COLORS = {
 
 function App() {
   const [articles, setArticles] = useState([]);
+  const [stocks, setStocks] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState('card'); // 'card' or 'table'
+  const [currentTab, setCurrentTab] = useState('news'); // 'news' or 'stocks'
+  const [stockView, setStockView] = useState('all'); // 'all', 'gainers', 'losers'
   const [loading, setLoading] = useState(true);
+  const [stocksLoading, setStocksLoading] = useState(false);
   const [expandedCards, setExpandedCards] = useState(new Set());
   const [systemStatus, setSystemStatus] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -39,7 +43,10 @@ function App() {
     fetchCategories();
     fetchArticles();
     fetchSystemStatus();
-  }, []);
+    if (currentTab === 'stocks') {
+      fetchStocks();
+    }
+  }, [currentTab]);
 
   const fetchCategories = async () => {
     try {
@@ -72,17 +79,35 @@ function App() {
     }
   };
 
+  const fetchStocks = async (view = 'all') => {
+    try {
+      setStocksLoading(true);
+      let endpoint = `${API}/stocks`;
+      
+      if (view === 'gainers') {
+        endpoint = `${API}/stocks/gainers`;
+      } else if (view === 'losers') {
+        endpoint = `${API}/stocks/losers`;
+      }
+      
+      const response = await axios.get(endpoint);
+      setStocks(response.data);
+    } catch (error) {
+      console.error('Error fetching stocks:', error);
+    } finally {
+      setStocksLoading(false);
+    }
+  };
+
   const refreshArticles = async () => {
     try {
       setRefreshing(true);
       const response = await axios.post(`${API}/articles/refresh`);
       
-      // Show success message
       if (response.data.message) {
         console.log('Refresh result:', response.data.message);
       }
       
-      // Refresh the articles and status
       await Promise.all([
         fetchArticles(selectedCategory),
         fetchSystemStatus()
@@ -90,6 +115,27 @@ function App() {
       
     } catch (error) {
       console.error('Error refreshing articles:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const refreshStocks = async () => {
+    try {
+      setRefreshing(true);
+      const response = await axios.post(`${API}/stocks/refresh`);
+      
+      if (response.data.message) {
+        console.log('Stock refresh result:', response.data.message);
+      }
+      
+      await Promise.all([
+        fetchStocks(stockView),
+        fetchSystemStatus()
+      ]);
+      
+    } catch (error) {
+      console.error('Error refreshing stocks:', error);
     } finally {
       setRefreshing(false);
     }
@@ -121,6 +167,11 @@ function App() {
     fetchArticles(category);
   };
 
+  const handleStockViewChange = (view) => {
+    setStockView(view);
+    fetchStocks(view);
+  };
+
   const toggleCardExpansion = (articleId) => {
     const newExpanded = new Set(expandedCards);
     if (newExpanded.has(articleId)) {
@@ -139,16 +190,6 @@ function App() {
     });
   };
 
-  const formatDateTime = (dateString) => {
-    return new Date(dateString).toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
   const getTimeSince = (dateString) => {
     const now = new Date();
     const date = new Date(dateString);
@@ -161,6 +202,25 @@ function App() {
     if (diffInDays < 7) return `${diffInDays} days ago`;
     
     return formatDate(dateString);
+  };
+
+  const formatPrice = (price) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2
+    }).format(price);
+  };
+
+  const formatNumber = (num) => {
+    if (num >= 1e9) {
+      return (num / 1e9).toFixed(1) + 'B';
+    } else if (num >= 1e6) {
+      return (num / 1e6).toFixed(1) + 'M';
+    } else if (num >= 1e3) {
+      return (num / 1e3).toFixed(1) + 'K';
+    }
+    return num?.toString() || '0';
   };
 
   const ArticleCard = ({ article }) => {
@@ -245,67 +305,54 @@ function App() {
     );
   };
 
-  const TableView = () => (
-    <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Date</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Category</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Title</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Summary</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Source</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Keywords</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900">Link</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {articles.map((article) => (
-              <tr key={article.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-6 py-4 text-sm text-gray-600">
-                  {formatDate(article.published_at)}
-                </td>
-                <td className="px-6 py-4">
-                  <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r ${CATEGORY_COLORS[article.category] || 'from-gray-500 to-gray-600'} text-white text-xs`}>
-                    {React.createElement(CATEGORY_ICONS[article.category] || BookOpen, { size: 12 })}
-                    {article.category}
-                  </div>
-                </td>
-                <td className="px-6 py-4 text-sm font-medium text-gray-900 max-w-xs">
-                  <div className="line-clamp-2">{article.title}</div>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-700 max-w-md">
-                  <div className="line-clamp-3">{article.summary}</div>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-600">{article.source}</td>
-                <td className="px-6 py-4">
-                  <div className="flex flex-wrap gap-1 max-w-xs">
-                    {article.keywords?.slice(0, 3).map((keyword, index) => (
-                      <span
-                        key={index}
-                        className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full"
-                      >
-                        {keyword}
-                      </span>
-                    ))}
-                  </div>
-                </td>
-                <td className="px-6 py-4">
-                  <button
-                    onClick={() => window.open(article.url, '_blank')}
-                    className="text-blue-500 hover:text-blue-700 transition-colors"
-                  >
-                    <ExternalLink size={16} />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+  const StockCard = ({ stock }) => {
+    const isPositive = stock.percent_change >= 0;
+    const TrendIcon = isPositive ? TrendingUp : TrendingDown;
+    
+    return (
+      <div className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 p-6">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h3 className="text-xl font-bold text-gray-900">{stock.symbol}</h3>
+            <p className="text-sm text-gray-600 line-clamp-1">{stock.name}</p>
+          </div>
+          <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-sm font-medium ${
+            isPositive 
+              ? 'bg-green-100 text-green-800' 
+              : 'bg-red-100 text-red-800'
+          }`}>
+            <TrendIcon size={14} />
+            {stock.percent_change.toFixed(2)}%
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm text-gray-500">Current Price</p>
+            <p className="text-lg font-semibold text-gray-900">{formatPrice(stock.current_price)}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">Change</p>
+            <p className={`text-lg font-semibold ${
+              isPositive ? 'text-green-600' : 'text-red-600'
+            }`}>
+              {isPositive ? '+' : ''}{formatPrice(stock.price_change)}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">Volume</p>
+            <p className="text-sm font-medium text-gray-700">{formatNumber(stock.volume)}</p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500">Market Cap</p>
+            <p className="text-sm font-medium text-gray-700">
+              {stock.market_cap ? formatPrice(stock.market_cap) : 'N/A'}
+            </p>
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const StatusBar = () => (
     <div className="bg-white rounded-2xl shadow-lg p-4 mb-6">
@@ -321,24 +368,66 @@ function App() {
             <>
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Clock size={16} />
-                <span>Last Update:</span>
-                <span className="font-medium">{getTimeSince(systemStatus.last_update)}</span>
+                <span>News Update:</span>
+                <span className="font-medium">{getTimeSince(systemStatus.last_news_update)}</span>
               </div>
               
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <BookOpen size={16} />
-                <span>Total Articles:</span>
+                <span>Articles:</span>
                 <span className="font-medium">{systemStatus.total_articles}</span>
+              </div>
+
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <BarChart3 size={16} />
+                <span>Stocks:</span>
+                <span className="font-medium">{systemStatus.total_stocks}</span>
               </div>
             </>
           )}
         </div>
         
         <div className="flex items-center gap-2 text-xs text-gray-500">
-          <span>Auto-updates every 12 hours</span>
+          <span>Real-time updates • RSS feeds • Stock data</span>
           <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
         </div>
       </div>
+
+      {/* Top Gainers/Losers Quick View */}
+      {systemStatus && systemStatus.top_gainers && systemStatus.top_losers && (
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h4 className="text-sm font-semibold text-green-600 mb-2 flex items-center gap-1">
+                <TrendingUp size={14} />
+                Top Gainers
+              </h4>
+              <div className="space-y-1">
+                {systemStatus.top_gainers.slice(0, 3).map((stock, index) => (
+                  <div key={index} className="flex justify-between items-center text-xs">
+                    <span className="font-medium">{stock.symbol}</span>
+                    <span className="text-green-600">+{stock.percent_change.toFixed(2)}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-red-600 mb-2 flex items-center gap-1">
+                <TrendingDown size={14} />
+                Top Losers
+              </h4>
+              <div className="space-y-1">
+                {systemStatus.top_losers.slice(0, 3).map((stock, index) => (
+                  <div key={index} className="flex justify-between items-center text-xs">
+                    <span className="font-medium">{stock.symbol}</span>
+                    <span className="text-red-600">{stock.percent_change.toFixed(2)}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
@@ -354,18 +443,44 @@ function App() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">BioNews</h1>
-                <p className="text-sm text-gray-500">Real-time Biotech & Pharma Research Updates</p>
+                <p className="text-sm text-gray-500">Real-time Biotech News & Stock Data</p>
               </div>
             </div>
             
-            <button
-              onClick={refreshArticles}
-              disabled={refreshing}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors disabled:opacity-50"
-            >
-              <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
-              {refreshing ? 'Updating...' : 'Refresh'}
-            </button>
+            {/* Tab Navigation */}
+            <div className="flex items-center gap-4">
+              <div className="flex items-center bg-gray-100 rounded-xl p-1">
+                <button
+                  onClick={() => setCurrentTab('news')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    currentTab === 'news' 
+                      ? 'bg-white shadow-md text-blue-600' 
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  News
+                </button>
+                <button
+                  onClick={() => setCurrentTab('stocks')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    currentTab === 'stocks' 
+                      ? 'bg-white shadow-md text-blue-600' 
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Stocks
+                </button>
+              </div>
+              
+              <button
+                onClick={currentTab === 'news' ? refreshArticles : refreshStocks}
+                disabled={refreshing}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors disabled:opacity-50"
+              >
+                <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+                {refreshing ? 'Updating...' : 'Refresh'}
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -374,84 +489,150 @@ function App() {
         {/* Status Bar */}
         <StatusBar />
 
-        {/* Search and Filters */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
-          <div className="flex flex-col lg:flex-row gap-4">
-            {/* Search */}
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                <input
-                  type="text"
-                  placeholder="Search articles, keywords, compounds..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && searchArticles()}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
+        {/* Content based on current tab */}
+        {currentTab === 'news' ? (
+          <>
+            {/* Search and Filters */}
+            <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+              <div className="flex flex-col lg:flex-row gap-4">
+                {/* Search */}
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                    <input
+                      type="text"
+                      placeholder="Search articles, keywords, compounds..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && searchArticles()}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                {/* Category Filter */}
+                <div className="flex items-center gap-4">
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => handleCategoryChange(e.target.value)}
+                    className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">All Categories</option>
+                    {categories.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* View Toggle */}
+                  <div className="flex items-center bg-gray-100 rounded-xl p-1">
+                    <button
+                      onClick={() => setViewMode('card')}
+                      className={`p-2 rounded-lg transition-colors ${
+                        viewMode === 'card' ? 'bg-white shadow-md text-blue-600' : 'text-gray-500'
+                      }`}
+                    >
+                      <Grid size={18} />
+                    </button>
+                    <button
+                      onClick={() => setViewMode('table')}
+                      className={`p-2 rounded-lg transition-colors ${
+                        viewMode === 'table' ? 'bg-white shadow-md text-blue-600' : 'text-gray-500'
+                      }`}
+                    >
+                      <List size={18} />
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Category Filter */}
-            <div className="flex items-center gap-4">
-              <select
-                value={selectedCategory}
-                onChange={(e) => handleCategoryChange(e.target.value)}
-                className="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">All Categories</option>
-                {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
+            {/* Articles Content */}
+            {loading ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="flex items-center gap-3 text-blue-600">
+                  <RefreshCw size={24} className="animate-spin" />
+                  <span className="text-lg font-medium">Loading latest articles...</span>
+                </div>
+              </div>
+            ) : articles.length === 0 ? (
+              <div className="text-center py-20">
+                <Microscope size={64} className="mx-auto text-gray-400 mb-4" />
+                <h3 className="text-xl font-semibold text-gray-600 mb-2">No articles found</h3>
+                <p className="text-gray-500">Try adjusting your search or filter criteria, or refresh to get the latest articles.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {articles.map((article) => (
+                  <ArticleCard key={article.id} article={article} />
                 ))}
-              </select>
-
-              {/* View Toggle */}
-              <div className="flex items-center bg-gray-100 rounded-xl p-1">
-                <button
-                  onClick={() => setViewMode('card')}
-                  className={`p-2 rounded-lg transition-colors ${
-                    viewMode === 'card' ? 'bg-white shadow-md text-blue-600' : 'text-gray-500'
-                  }`}
-                >
-                  <Grid size={18} />
-                </button>
-                <button
-                  onClick={() => setViewMode('table')}
-                  className={`p-2 rounded-lg transition-colors ${
-                    viewMode === 'table' ? 'bg-white shadow-md text-blue-600' : 'text-gray-500'
-                  }`}
-                >
-                  <List size={18} />
-                </button>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            {/* Stock Filters */}
+            <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+              <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <h2 className="text-lg font-semibold text-gray-900">Biotech & Pharma Stocks</h2>
+                  <div className="flex items-center bg-gray-100 rounded-xl p-1">
+                    <button
+                      onClick={() => handleStockViewChange('all')}
+                      className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                        stockView === 'all' ? 'bg-white shadow-md text-blue-600' : 'text-gray-500'
+                      }`}
+                    >
+                      All Stocks
+                    </button>
+                    <button
+                      onClick={() => handleStockViewChange('gainers')}
+                      className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                        stockView === 'gainers' ? 'bg-white shadow-md text-green-600' : 'text-gray-500'
+                      }`}
+                    >
+                      Top Gainers
+                    </button>
+                    <button
+                      onClick={() => handleStockViewChange('losers')}
+                      className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
+                        stockView === 'losers' ? 'bg-white shadow-md text-red-600' : 'text-gray-500'
+                      }`}
+                    >
+                      Top Losers
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="text-sm text-gray-500">
+                  Updated: {systemStatus ? getTimeSince(systemStatus.last_stock_update) : 'Loading...'}
+                </div>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* Content */}
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="flex items-center gap-3 text-blue-600">
-              <RefreshCw size={24} className="animate-spin" />
-              <span className="text-lg font-medium">Loading latest articles...</span>
-            </div>
-          </div>
-        ) : articles.length === 0 ? (
-          <div className="text-center py-20">
-            <Microscope size={64} className="mx-auto text-gray-400 mb-4" />
-            <h3 className="text-xl font-semibold text-gray-600 mb-2">No articles found</h3>
-            <p className="text-gray-500">Try adjusting your search or filter criteria, or refresh to get the latest articles.</p>
-          </div>
-        ) : viewMode === 'card' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {articles.map((article) => (
-              <ArticleCard key={article.id} article={article} />
-            ))}
-          </div>
-        ) : (
-          <TableView />
+            {/* Stocks Content */}
+            {stocksLoading ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="flex items-center gap-3 text-blue-600">
+                  <RefreshCw size={24} className="animate-spin" />
+                  <span className="text-lg font-medium">Loading stock data...</span>
+                </div>
+              </div>
+            ) : stocks.length === 0 ? (
+              <div className="text-center py-20">
+                <BarChart3 size={64} className="mx-auto text-gray-400 mb-4" />
+                <h3 className="text-xl font-semibold text-gray-600 mb-2">No stock data available</h3>
+                <p className="text-gray-500">Try refreshing to get the latest stock information.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {stocks.map((stock) => (
+                  <StockCard key={stock.symbol} stock={stock} />
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
