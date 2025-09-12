@@ -8,7 +8,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 import uuid
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 import requests
 import asyncio
 from emergentintegrations.llm.chat import LlmChat, UserMessage
@@ -381,7 +381,7 @@ async def fetch_pubmed_articles(max_articles: int = 8) -> List[Dict]:
         
         for search_term in search_terms:
             # Search PubMed
-            search_url = f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+            search_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
             search_params = {
                 'db': 'pubmed',
                 'term': search_term,
