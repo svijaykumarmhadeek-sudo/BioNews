@@ -280,12 +280,16 @@ class BiotechNewsAPITester:
 
     def run_all_tests(self):
         """Run all API tests"""
-        print("🧪 Starting Biotech News API Testing...")
+        print("🧪 Starting Enhanced Biotech News API Testing...")
         print(f"🌐 Base URL: {self.base_url}")
-        print("=" * 60)
+        print("🔬 Testing: Real News Integration, Auto-Scheduling, Timestamps")
+        print("=" * 70)
         
         # Test basic connectivity
         self.test_root_endpoint()
+        
+        # Test new system status endpoint
+        self.test_system_status()
         
         # Test core functionality
         self.test_get_categories()
@@ -293,22 +297,25 @@ class BiotechNewsAPITester:
         self.test_get_articles_by_category()
         self.test_get_single_article()
         
+        # Test real news integration
+        self.test_real_news_integration()
+        
         # Test search functionality
         self.test_search_articles()
         
         # Test user preferences
         self.test_user_preferences()
         
-        # Test LLM integration (refresh articles)
+        # Test enhanced refresh with real news APIs and LLM integration
         self.test_refresh_articles()
         
         # Test error handling
         self.test_error_handling()
         
         # Print summary
-        print("\n" + "=" * 60)
-        print("📊 TEST SUMMARY")
-        print("=" * 60)
+        print("\n" + "=" * 70)
+        print("📊 ENHANCED API TEST SUMMARY")
+        print("=" * 70)
         print(f"Total Tests: {self.tests_run}")
         print(f"Passed: {self.tests_passed}")
         print(f"Failed: {self.tests_run - self.tests_passed}")
@@ -320,6 +327,8 @@ class BiotechNewsAPITester:
             print("\n❌ FAILED TESTS:")
             for test in failed_tests:
                 print(f"   • {test['name']}: {test['details']}")
+        else:
+            print("\n✅ ALL TESTS PASSED!")
         
         return self.tests_passed == self.tests_run
 
