@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, Grid, List, Calendar, ExternalLink, RefreshCw, Heart, BookOpen, Microscope, Pill, Building2, Shield } from 'lucide-react';
+import { Search, Filter, Grid, List, Calendar, ExternalLink, RefreshCw, Heart, BookOpen, Microscope, Pill, Building2, Shield, Clock, Activity } from 'lucide-react';
 import './App.css';
 import axios from 'axios';
 
@@ -32,11 +32,13 @@ function App() {
   const [viewMode, setViewMode] = useState('card'); // 'card' or 'table'
   const [loading, setLoading] = useState(true);
   const [expandedCards, setExpandedCards] = useState(new Set());
-  const [preferences, setPreferences] = useState([]);
+  const [systemStatus, setSystemStatus] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     fetchCategories();
     fetchArticles();
+    fetchSystemStatus();
   }, []);
 
   const fetchCategories = async () => {
@@ -45,6 +47,15 @@ function App() {
       setCategories(response.data.categories);
     } catch (error) {
       console.error('Error fetching categories:', error);
+    }
+  };
+
+  const fetchSystemStatus = async () => {
+    try {
+      const response = await axios.get(`${API}/status`);
+      setSystemStatus(response.data);
+    } catch (error) {
+      console.error('Error fetching system status:', error);
     }
   };
 
@@ -63,13 +74,24 @@ function App() {
 
   const refreshArticles = async () => {
     try {
-      setLoading(true);
-      await axios.post(`${API}/articles/refresh`);
-      await fetchArticles(selectedCategory);
+      setRefreshing(true);
+      const response = await axios.post(`${API}/articles/refresh`);
+      
+      // Show success message
+      if (response.data.message) {
+        console.log('Refresh result:', response.data.message);
+      }
+      
+      // Refresh the articles and status
+      await Promise.all([
+        fetchArticles(selectedCategory),
+        fetchSystemStatus()
+      ]);
+      
     } catch (error) {
       console.error('Error refreshing articles:', error);
     } finally {
-      setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -115,6 +137,30 @@ function App() {
       month: 'short',
       day: 'numeric'
     });
+  };
+
+  const formatDateTime = (dateString) => {
+    return new Date(dateString).toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getTimeSince = (dateString) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return 'Less than an hour ago';
+    if (diffInHours < 24) return `${diffInHours} hours ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) return `${diffInDays} days ago`;
+    
+    return formatDate(dateString);
   };
 
   const ArticleCard = ({ article }) => {
@@ -261,6 +307,41 @@ function App() {
     </div>
   );
 
+  const StatusBar = () => (
+    <div className="bg-white rounded-2xl shadow-lg p-4 mb-6">
+      <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <Activity size={16} className="text-green-500" />
+            <span className="font-medium">System Status:</span>
+            <span className="text-green-600">Active</span>
+          </div>
+          
+          {systemStatus && (
+            <>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Clock size={16} />
+                <span>Last Update:</span>
+                <span className="font-medium">{getTimeSince(systemStatus.last_update)}</span>
+              </div>
+              
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <BookOpen size={16} />
+                <span>Total Articles:</span>
+                <span className="font-medium">{systemStatus.total_articles}</span>
+              </div>
+            </>
+          )}
+        </div>
+        
+        <div className="flex items-center gap-2 text-xs text-gray-500">
+          <span>Auto-updates every 12 hours</span>
+          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Header */}
@@ -273,24 +354,27 @@ function App() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">BioNews</h1>
-                <p className="text-sm text-gray-500">Biotech & Pharma Research Updates</p>
+                <p className="text-sm text-gray-500">Real-time Biotech & Pharma Research Updates</p>
               </div>
             </div>
             
             <button
               onClick={refreshArticles}
-              disabled={loading}
+              disabled={refreshing}
               className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors disabled:opacity-50"
             >
-              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-              Refresh
+              <RefreshCw size={16} className={refreshing ? 'animate-spin' : ''} />
+              {refreshing ? 'Updating...' : 'Refresh'}
             </button>
           </div>
         </div>
       </header>
 
-      {/* Search and Filters */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Status Bar */}
+        <StatusBar />
+
+        {/* Search and Filters */}
         <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Search */}
@@ -351,14 +435,14 @@ function App() {
           <div className="flex items-center justify-center py-20">
             <div className="flex items-center gap-3 text-blue-600">
               <RefreshCw size={24} className="animate-spin" />
-              <span className="text-lg font-medium">Loading articles...</span>
+              <span className="text-lg font-medium">Loading latest articles...</span>
             </div>
           </div>
         ) : articles.length === 0 ? (
           <div className="text-center py-20">
             <Microscope size={64} className="mx-auto text-gray-400 mb-4" />
             <h3 className="text-xl font-semibold text-gray-600 mb-2">No articles found</h3>
-            <p className="text-gray-500">Try adjusting your search or filter criteria.</p>
+            <p className="text-gray-500">Try adjusting your search or filter criteria, or refresh to get the latest articles.</p>
           </div>
         ) : viewMode === 'card' ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

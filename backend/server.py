@@ -12,6 +12,11 @@ from datetime import datetime, timezone
 import requests
 import asyncio
 from emergentintegrations.llm.chat import LlmChat, UserMessage
+from newsapi import NewsApiClient
+import xml.etree.ElementTree as ET
+from bs4 import BeautifulSoup
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+import re
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -35,6 +40,10 @@ chat = LlmChat(
     system_message="You are an expert biotech and pharmaceutical research summarizer. Summarize articles in 2-3 concise sentences highlighting key findings, mechanisms, clinical phases, or policy changes. Focus on compound names, outcomes, and significance."
 ).with_model("openai", "gpt-4o")
 
+# News API client
+news_api_key = os.environ.get('NEWS_API_KEY')
+newsapi = NewsApiClient(api_key=news_api_key) if news_api_key else None
+
 # Categories for biotech news
 CATEGORIES = [
     "Academic Research",
@@ -44,6 +53,23 @@ CATEGORIES = [
     "Drug Modalities",
     "Healthcare & Policy"
 ]
+
+# Category mapping for different news sources
+CATEGORY_MAPPING = {
+    'clinical trial': 'Clinical Trials',
+    'fda approval': 'Drug Modalities',
+    'biotech': 'Industry Updates',
+    'pharmaceutical': 'Industry Updates',
+    'drug discovery': 'Early Discovery',
+    'research': 'Academic Research',
+    'healthcare policy': 'Healthcare & Policy',
+    'gene therapy': 'Drug Modalities',
+    'cancer treatment': 'Clinical Trials',
+    'vaccine': 'Drug Modalities'
+}
+
+# Global variable to track last update
+last_news_update = datetime.now(timezone.utc)
 
 # Define Models
 class Article(BaseModel):
@@ -80,76 +106,309 @@ class SearchQuery(BaseModel):
     category: Optional[str] = None
     limit: int = 20
 
+class SystemStatus(BaseModel):
+    last_update: datetime
+    total_articles: int
+    articles_by_category: Dict[str, int]
+    next_scheduled_update: Optional[datetime] = None
+
 # News aggregation functions
-async def fetch_biotech_news():
-    """Fetch news from various biotech sources"""
-    articles = []
+def categorize_article(title: str, content: str) -> str:
+    """Automatically categorize articles based on content"""
+    text = (title + " " + content).lower()
     
-    # Sample biotech/pharma news data (in production, you'd fetch from real APIs)
-    sample_articles = [
-        {
-            "title": "Novel CAR-T Cell Therapy Shows Promise in Phase II Clinical Trial",
-            "content": "A breakthrough CAR-T cell therapy targeting CD19 antigen has demonstrated remarkable efficacy in treating relapsed B-cell lymphomas. The Phase II clinical trial enrolled 156 patients and achieved a 78% complete response rate. The treatment, developed by BioPharma Innovations, uses a novel third-generation CAR construct with enhanced persistence. Patients showed durable responses at 12-month follow-up with manageable cytokine release syndrome. The FDA has granted breakthrough therapy designation for this innovative immunotherapy approach.",
-            "category": "Clinical Trials",
-            "source": "BioPharma Journal",
-            "url": "https://example.com/car-t-therapy",
-            "image_url": "https://images.unsplash.com/photo-1581594549595-35f6edc7b762?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzh8MHwxfHNlYXJjaHwxfHxiaW90ZWNofGVufDB8fHx8MTc1NzY5Nzg2Mnww&ixlib=rb-4.1.0&q=85",
-            "keywords": ["CAR-T", "immunotherapy", "lymphoma", "clinical trial"],
-            "published_at": datetime.now(timezone.utc)
-        },
-        {
-            "title": "CRISPR Gene Editing Platform Receives FDA Approval for Sickle Cell Disease",
-            "content": "The FDA has approved the first CRISPR-based gene therapy for sickle cell disease, marking a historic milestone in precision medicine. The treatment, called CTX001, was developed collaboratively by CRISPR Therapeutics and Vertex Pharmaceuticals. Clinical trials showed that 95% of patients achieved transfusion independence with no vaso-occlusive crises. The therapy works by editing the BCL11A gene to reactivate fetal hemoglobin production. This approval paves the way for broader applications of gene editing in treating genetic disorders.",
-            "category": "Drug Modalities",
-            "source": "Nature Biotechnology",
-            "url": "https://example.com/crispr-approval",
-            "image_url": "https://images.unsplash.com/photo-1578496480240-32d3e0c04525?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzh8MHwxfHNlYXJjaHw0fHxiaW90ZWNofGVufDB8fHx8MTc1NzY5Nzg2Mnww&ixlib=rb-4.1.0&q=85",
-            "keywords": ["CRISPR", "gene therapy", "sickle cell", "FDA approval"],
-            "published_at": datetime.now(timezone.utc)
-        },
-        {
-            "title": "Breakthrough mRNA Vaccine Platform for Cancer Immunotherapy",
-            "content": "Researchers at MIT have developed a revolutionary mRNA vaccine platform that can be rapidly customized for different cancer types. The platform uses lipid nanoparticles to deliver tumor-specific antigens and immune adjuvants directly to dendritic cells. Preclinical studies in melanoma and colorectal cancer models showed 85% tumor regression rates. The technology allows for personalized cancer vaccines to be manufactured within 48 hours of tumor sequencing. Phase I human trials are expected to begin next quarter with partnerships from major pharmaceutical companies.",
-            "category": "Academic Research",
-            "source": "Cell Medicine",
-            "url": "https://example.com/mrna-cancer-vaccine",
-            "image_url": "https://images.unsplash.com/photo-1648792940059-3b782a7b8b20?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzh8MHwxfHNlYXJjaHwzfHxiaW90ZWNofGVufDB8fHx8MTc1NzY5Nzg2Mnww&ixlib=rb-4.1.0&q=85",
-            "keywords": ["mRNA", "cancer vaccine", "immunotherapy", "personalized medicine"],
-            "published_at": datetime.now(timezone.utc)
-        },
-        {
-            "title": "AI-Powered Drug Discovery Identifies Novel Alzheimer's Treatment",
-            "content": "DeepMind's AlphaFold AI has identified a promising small molecule compound for treating Alzheimer's disease by targeting amyloid-beta aggregation. The compound, designated DM-2847, shows high selectivity for pathological protein conformations while sparing normal cellular functions. In vitro studies demonstrated 92% reduction in amyloid plaque formation with excellent blood-brain barrier penetration. The discovery process took only 6 months compared to traditional 3-5 year timelines. Pharmaceutical giant Roche has licensed the compound for IND-enabling studies and Phase I trials.",
-            "category": "Early Discovery",
-            "source": "Science Translational Medicine",
-            "url": "https://example.com/ai-alzheimers-drug",
-            "image_url": "https://images.unsplash.com/photo-1576671081837-49000212a370?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDN8MHwxfHNlYXJjaHwyfHxwaGFybWFjZXV0aWNhbHxlbnwwfHx8fDE3NTc2OTc4Njd8MA&ixlib=rb-4.1.0&q=85",
-            "keywords": ["AI", "drug discovery", "Alzheimer's", "small molecule"],
-            "published_at": datetime.now(timezone.utc)
-        },
-        {
-            "title": "Biosimilar Market Expansion Drives Healthcare Cost Reduction",
-            "content": "The global biosimilar market has reached $25 billion with significant impact on healthcare costs. New FDA guidelines have streamlined approval processes for complex biosimilar products including monoclonal antibodies and protein therapeutics. Cost savings of 20-40% compared to reference biologics have improved patient access to life-saving treatments. European markets lead adoption with 75% biosimilar penetration in oncology indications. Regulatory harmonization between FDA and EMA is accelerating global development timelines for biosimilar manufacturers.",
-            "category": "Healthcare & Policy",
-            "source": "Pharmaceutical Executive",
-            "url": "https://example.com/biosimilar-market",
-            "image_url": "https://images.pexels.com/photos/3938022/pexels-photo-3938022.jpeg",
-            "keywords": ["biosimilars", "healthcare policy", "cost reduction", "FDA"],
-            "published_at": datetime.now(timezone.utc)
-        },
-        {
-            "title": "Moderna Partners with Gates Foundation for Global mRNA Manufacturing",
-            "content": "Moderna has announced a strategic partnership with the Bill & Melinda Gates Foundation to establish mRNA manufacturing facilities in Africa and Asia. The initiative aims to produce vaccines for pandemic preparedness and endemic diseases like malaria and tuberculosis. Investment of $500 million will fund technology transfer and local workforce training programs. The facilities will use Moderna's proprietary lipid nanoparticle formulation technology for enhanced vaccine stability in tropical climates. Production capacity is expected to reach 1 billion doses annually by 2027.",
-            "category": "Industry Updates",
-            "source": "BioPharma Dive",
-            "url": "https://example.com/moderna-gates-partnership",
-            "image_url": "https://images.unsplash.com/photo-1707944746058-4da338d0f827?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDF8MHwxfHNlYXJjaHwyfHxsYWJvcmF0b3J5JTIwcmVzZWFyY2h8ZW58MHx8fHwxNzU3Njk3ODcyfDA&ixlib=rb-4.1.0&q=85",
-            "keywords": ["Moderna", "mRNA", "global health", "manufacturing"],
-            "published_at": datetime.now(timezone.utc)
-        }
+    # Check for specific keywords
+    for keyword, category in CATEGORY_MAPPING.items():
+        if keyword in text:
+            return category
+    
+    # Default categorization based on broader keywords
+    if any(word in text for word in ['clinical', 'trial', 'patient', 'treatment']):
+        return 'Clinical Trials'
+    elif any(word in text for word in ['discovery', 'compound', 'molecule']):
+        return 'Early Discovery'
+    elif any(word in text for word in ['fda', 'approval', 'drug', 'therapy']):
+        return 'Drug Modalities'
+    elif any(word in text for word in ['policy', 'regulation', 'healthcare']):
+        return 'Healthcare & Policy'
+    elif any(word in text for word in ['research', 'study', 'university']):
+        return 'Academic Research'
+    else:
+        return 'Industry Updates'
+
+def extract_keywords(title: str, content: str) -> List[str]:
+    """Extract relevant keywords from article content"""
+    text = (title + " " + content).lower()
+    
+    # Biotech/pharma specific keywords
+    biotech_keywords = [
+        'crispr', 'gene therapy', 'car-t', 'immunotherapy', 'mrna', 'vaccine',
+        'clinical trial', 'fda approval', 'biomarker', 'precision medicine',
+        'antibody', 'protein', 'small molecule', 'biologics', 'biosimilar',
+        'oncology', 'neurology', 'cardiology', 'rare disease', 'orphan drug'
     ]
     
-    return sample_articles
+    found_keywords = []
+    for keyword in biotech_keywords:
+        if keyword in text:
+            found_keywords.append(keyword)
+    
+    # Extract additional keywords using regex
+    drug_pattern = r'\b[A-Z]{2,}-\d+\b|\b[A-Z][a-z]+\d+\b'
+    drug_matches = re.findall(drug_pattern, title + " " + content)
+    found_keywords.extend(drug_matches[:3])  # Limit to 3 drug names
+    
+    return found_keywords[:5]  # Return max 5 keywords
+
+async def fetch_pubmed_articles(max_articles: int = 10) -> List[Dict]:
+    """Fetch latest biotech articles from PubMed"""
+    articles = []
+    
+    try:
+        # PubMed search terms for biotech/pharma
+        search_terms = [
+            "biotechnology[Title/Abstract] AND 2024[Date - Publication]",
+            "pharmaceutical[Title/Abstract] AND clinical trial[Title/Abstract] AND 2024[Date - Publication]",
+            "gene therapy[Title/Abstract] AND 2024[Date - Publication]",
+            "immunotherapy[Title/Abstract] AND cancer[Title/Abstract] AND 2024[Date - Publication]"
+        ]
+        
+        for search_term in search_terms[:2]:  # Limit to 2 searches to avoid rate limits
+            # Search PubMed
+            search_url = f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi"
+            search_params = {
+                'db': 'pubmed',
+                'term': search_term,
+                'retmax': max_articles // 2,
+                'retmode': 'xml'
+            }
+            
+            search_response = requests.get(search_url, params=search_params, timeout=10)
+            if search_response.status_code != 200:
+                continue
+                
+            # Parse search results
+            search_root = ET.fromstring(search_response.content)
+            pmids = [id_elem.text for id_elem in search_root.findall('.//Id')]
+            
+            if not pmids:
+                continue
+                
+            # Fetch article details
+            fetch_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi"
+            fetch_params = {
+                'db': 'pubmed',
+                'id': ','.join(pmids[:5]),  # Limit to 5 articles per search
+                'retmode': 'xml'
+            }
+            
+            fetch_response = requests.get(fetch_url, params=fetch_params, timeout=15)
+            if fetch_response.status_code != 200:
+                continue
+                
+            # Parse article details
+            root = ET.fromstring(fetch_response.content)
+            
+            for article_elem in root.findall('.//PubmedArticle'):
+                try:
+                    title_elem = article_elem.find('.//ArticleTitle')
+                    abstract_elem = article_elem.find('.//AbstractText')
+                    journal_elem = article_elem.find('.//Journal/Title')
+                    date_elem = article_elem.find('.//PubDate')
+                    pmid_elem = article_elem.find('.//PMID')
+                    
+                    if title_elem is not None and abstract_elem is not None:
+                        title = title_elem.text or "No title available"
+                        abstract = abstract_elem.text or "No abstract available"
+                        journal = journal_elem.text if journal_elem is not None else "PubMed Journal"
+                        pmid = pmid_elem.text if pmid_elem is not None else "unknown"
+                        
+                        # Parse publication date
+                        pub_date = datetime.now(timezone.utc)
+                        if date_elem is not None:
+                            year_elem = date_elem.find('Year')
+                            month_elem = date_elem.find('Month')
+                            day_elem = date_elem.find('Day')
+                            
+                            if year_elem is not None:
+                                year = int(year_elem.text)
+                                month = int(month_elem.text) if month_elem is not None else 1
+                                day = int(day_elem.text) if day_elem is not None else 1
+                                pub_date = datetime(year, month, day, tzinfo=timezone.utc)
+                        
+                        articles.append({
+                            'title': title,
+                            'content': abstract,
+                            'category': categorize_article(title, abstract),
+                            'source': journal,
+                            'url': f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/",
+                            'image_url': "https://images.unsplash.com/photo-1578496480240-32d3e0c04525?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzh8MHwxfHNlYXJjaHw0fHxiaW90ZWNofGVufDB8fHx8MTc1NzY5Nzg2Mnww&ixlib=rb-4.1.0&q=85",
+                            'published_at': pub_date,
+                            'keywords': extract_keywords(title, abstract)
+                        })
+                        
+                except Exception as e:
+                    logging.warning(f"Error parsing PubMed article: {e}")
+                    continue
+                    
+            await asyncio.sleep(1)  # Rate limiting
+            
+    except Exception as e:
+        logging.error(f"Error fetching PubMed articles: {e}")
+    
+    return articles[:max_articles]
+
+async def fetch_newsapi_articles(max_articles: int = 10) -> List[Dict]:
+    """Fetch biotech news from NewsAPI"""
+    articles = []
+    
+    if not newsapi:
+        return articles
+        
+    try:
+        # Search for biotech/pharma news
+        keywords = [
+            "biotechnology", "pharmaceutical", "clinical trial", 
+            "FDA approval", "gene therapy", "immunotherapy"
+        ]
+        
+        for keyword in keywords[:3]:  # Limit searches
+            try:
+                response = newsapi.get_everything(
+                    q=keyword,
+                    language='en',
+                    sort_by='publishedAt',
+                    page_size=max_articles // 3,
+                    domains='biopharmadive.com,fiercebiotech.com,biospace.com,endpoints.com'
+                )
+                
+                if response.get('status') == 'ok' and response.get('articles'):
+                    for article in response['articles']:
+                        if article.get('title') and article.get('description'):
+                            # Use description as content since full content might be limited
+                            content = article.get('content') or article.get('description', '')
+                            
+                            articles.append({
+                                'title': article['title'],
+                                'content': content,
+                                'category': categorize_article(article['title'], content),
+                                'source': article.get('source', {}).get('name', 'NewsAPI'),
+                                'url': article.get('url', ''),
+                                'image_url': article.get('urlToImage') or "https://images.unsplash.com/photo-1576671081837-49000212a370?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDQ2NDN8MHwxfHNlYXJjaHwyfHxwaGFybWFjZXV0aWNhbHxlbnwwfHx8fDE3NTc2OTc4Njd8MA&ixlib=rb-4.1.0&q=85",
+                                'published_at': datetime.fromisoformat(article['publishedAt'].replace('Z', '+00:00')),
+                                'keywords': extract_keywords(article['title'], content)
+                            })
+                            
+            except Exception as e:
+                logging.warning(f"Error fetching NewsAPI articles for {keyword}: {e}")
+                continue
+                
+            await asyncio.sleep(1)  # Rate limiting
+            
+    except Exception as e:
+        logging.error(f"Error with NewsAPI: {e}")
+    
+    return articles[:max_articles]
+
+async def fetch_clinical_trials(max_articles: int = 5) -> List[Dict]:
+    """Fetch recent clinical trials from ClinicalTrials.gov"""
+    articles = []
+    
+    try:
+        # Search for recent biotech clinical trials
+        url = "https://clinicaltrials.gov/api/query/study_fields"
+        params = {
+            'expr': 'biotechnology OR "gene therapy" OR immunotherapy OR "CAR-T"',
+            'fields': 'NCTId,BriefTitle,BriefSummary,Condition,InterventionName,StudyFirstPostDate,LeadSponsorName',
+            'min_rnk': 1,
+            'max_rnk': max_articles,
+            'fmt': 'json'
+        }
+        
+        response = requests.get(url, params=params, timeout=15)
+        if response.status_code == 200:
+            data = response.json()
+            
+            if 'StudyFieldsResponse' in data and 'StudyFields' in data['StudyFieldsResponse']:
+                for study in data['StudyFieldsResponse']['StudyFields']:
+                    try:
+                        nct_id = study.get('NCTId', [''])[0]
+                        title = study.get('BriefTitle', [''])[0]
+                        summary = study.get('BriefSummary', [''])[0]
+                        condition = ', '.join(study.get('Condition', []))
+                        intervention = ', '.join(study.get('InterventionName', []))
+                        sponsor = study.get('LeadSponsorName', [''])[0]
+                        post_date = study.get('StudyFirstPostDate', [''])[0]
+                        
+                        if title and summary:
+                            # Parse date
+                            pub_date = datetime.now(timezone.utc)
+                            if post_date:
+                                try:
+                                    pub_date = datetime.strptime(post_date, '%B %d, %Y').replace(tzinfo=timezone.utc)
+                                except:
+                                    pass
+                            
+                            content = f"{summary}\n\nCondition: {condition}\nIntervention: {intervention}\nSponsor: {sponsor}"
+                            
+                            articles.append({
+                                'title': f"Clinical Trial: {title}",
+                                'content': content,
+                                'category': 'Clinical Trials',
+                                'source': 'ClinicalTrials.gov',
+                                'url': f"https://clinicaltrials.gov/study/{nct_id}",
+                                'image_url': "https://images.unsplash.com/photo-1581594549595-35f6edc7b762?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1Nzh8MHwxfHNlYXJjaHwxfHxiaW90ZWNofGVufDB8fHx8MTc1NzY5Nzg2Mnww&ixlib=rb-4.1.0&q=85",
+                                'published_at': pub_date,
+                                'keywords': extract_keywords(title, content)
+                            })
+                            
+                    except Exception as e:
+                        logging.warning(f"Error parsing clinical trial: {e}")
+                        continue
+                        
+    except Exception as e:
+        logging.error(f"Error fetching clinical trials: {e}")
+    
+    return articles
+
+async def fetch_real_biotech_news() -> List[Dict]:
+    """Fetch news from all sources"""
+    all_articles = []
+    
+    try:
+        logging.info("Fetching real biotech news from multiple sources...")
+        
+        # Fetch from all sources concurrently
+        tasks = [
+            fetch_pubmed_articles(8),
+            fetch_newsapi_articles(8),
+            fetch_clinical_trials(4)
+        ]
+        
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        
+        for result in results:
+            if isinstance(result, list):
+                all_articles.extend(result)
+            elif isinstance(result, Exception):
+                logging.error(f"Error in news fetching task: {result}")
+        
+        # Remove duplicates based on title similarity
+        unique_articles = []
+        seen_titles = set()
+        
+        for article in all_articles:
+            title_key = article['title'].lower()[:50]  # First 50 chars for similarity check
+            if title_key not in seen_titles:
+                seen_titles.add(title_key)
+                unique_articles.append(article)
+        
+        logging.info(f"Fetched {len(unique_articles)} unique articles from real sources")
+        return unique_articles[:20]  # Limit to 20 most recent
+        
+    except Exception as e:
+        logging.error(f"Error in fetch_real_biotech_news: {e}")
+        return []
 
 async def summarize_article(content: str) -> str:
     """Use LLM to summarize article content"""
@@ -165,7 +424,27 @@ async def summarize_article(content: str) -> str:
 # API Routes
 @api_router.get("/")
 async def root():
-    return {"message": "Biotech News API", "version": "1.0.0"}
+    return {"message": "Biotech News API", "version": "2.0.0", "features": ["Real News Integration", "Auto Updates", "Timestamps"]}
+
+@api_router.get("/status", response_model=SystemStatus)
+async def get_system_status():
+    """Get system status with last update info"""
+    total_articles = await db.articles.count_documents({})
+    
+    # Count articles by category
+    pipeline = [
+        {"$group": {"_id": "$category", "count": {"$sum": 1}}}
+    ]
+    category_counts = {}
+    async for result in db.articles.aggregate(pipeline):
+        category_counts[result["_id"]] = result["count"]
+    
+    return SystemStatus(
+        last_update=last_news_update,
+        total_articles=total_articles,
+        articles_by_category=category_counts,
+        next_scheduled_update=None  # Will be updated when scheduler is running
+    )
 
 @api_router.get("/categories")
 async def get_categories():
@@ -195,14 +474,23 @@ async def get_article(article_id: str):
 
 @api_router.post("/articles/refresh")
 async def refresh_articles():
-    """Fetch and store new articles"""
+    """Fetch and store new articles from real sources"""
+    global last_news_update
+    
     try:
-        new_articles = await fetch_biotech_news()
+        logging.info("Starting manual article refresh...")
+        new_articles = await fetch_real_biotech_news()
         stored_count = 0
         
         for article_data in new_articles:
-            # Check if article already exists
-            existing = await db.articles.find_one({"url": article_data["url"]})
+            # Check if article already exists (by URL or title similarity)
+            existing = await db.articles.find_one({
+                "$or": [
+                    {"url": article_data["url"]},
+                    {"title": {"$regex": f"^{re.escape(article_data['title'][:50])}", "$options": "i"}}
+                ]
+            })
+            
             if existing:
                 continue
                 
@@ -217,10 +505,18 @@ async def refresh_articles():
             await db.articles.insert_one(article.model_dump())
             stored_count += 1
         
-        return {"message": f"Refreshed {stored_count} articles", "total_fetched": len(new_articles)}
+        last_news_update = datetime.now(timezone.utc)
+        logging.info(f"Manual refresh completed: {stored_count} new articles stored")
+        
+        return {
+            "message": f"Refreshed {stored_count} new articles", 
+            "total_fetched": len(new_articles),
+            "last_update": last_news_update
+        }
+        
     except Exception as e:
         logging.error(f"Error refreshing articles: {e}")
-        raise HTTPException(status_code=500, detail="Error refreshing articles")
+        raise HTTPException(status_code=500, detail=f"Error refreshing articles: {str(e)}")
 
 @api_router.post("/search", response_model=List[Article])
 async def search_articles(search_query: SearchQuery):
@@ -229,6 +525,7 @@ async def search_articles(search_query: SearchQuery):
         "$or": [
             {"title": {"$regex": search_query.query, "$options": "i"}},
             {"summary": {"$regex": search_query.query, "$options": "i"}},
+            {"content": {"$regex": search_query.query, "$options": "i"}},
             {"keywords": {"$in": [search_query.query.lower()]}}
         ]
     }
@@ -268,6 +565,47 @@ async def get_user_preferences(user_id: str):
         return UserPreferences(user_id=user_id, preferred_categories=CATEGORIES)
     return UserPreferences(**prefs)
 
+# Auto-update scheduler
+scheduler = AsyncIOScheduler()
+
+async def scheduled_news_update():
+    """Scheduled task to update news every 12 hours"""
+    global last_news_update
+    
+    try:
+        logging.info("Starting scheduled news update...")
+        new_articles = await fetch_real_biotech_news()
+        stored_count = 0
+        
+        for article_data in new_articles:
+            # Check if article already exists
+            existing = await db.articles.find_one({
+                "$or": [
+                    {"url": article_data["url"]},
+                    {"title": {"$regex": f"^{re.escape(article_data['title'][:50])}", "$options": "i"}}
+                ]
+            })
+            
+            if existing:
+                continue
+                
+            # Summarize the article content
+            summary = await summarize_article(article_data["content"])
+            
+            article = Article(
+                **article_data,
+                summary=summary
+            )
+            
+            await db.articles.insert_one(article.model_dump())
+            stored_count += 1
+        
+        last_news_update = datetime.now(timezone.utc)
+        logging.info(f"Scheduled update completed: {stored_count} new articles stored")
+        
+    except Exception as e:
+        logging.error(f"Error in scheduled news update: {e}")
+
 # Include the router in the main app
 app.include_router(api_router)
 
@@ -288,16 +626,37 @@ logger = logging.getLogger(__name__)
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize the database with sample data"""
+    """Initialize the database and start scheduler"""
+    global last_news_update
+    
     try:
         # Check if we already have articles
         article_count = await db.articles.count_documents({})
-        if article_count == 0:
-            logger.info("Initializing database with sample articles...")
+        
+        if article_count < 5:  # If less than 5 articles, fetch initial set
+            logger.info("Initializing database with real biotech news...")
             await refresh_articles()
+        else:
+            logger.info(f"Database already has {article_count} articles")
+        
+        # Start the scheduler for auto-updates every 12 hours
+        if not scheduler.running:
+            scheduler.add_job(
+                scheduled_news_update,
+                'interval',
+                hours=12,
+                id='news_update',
+                next_run_time=None  # Start immediately for first run, then every 12 hours
+            )
+            scheduler.start()
+            logger.info("Auto-update scheduler started - updates every 12 hours")
+        
     except Exception as e:
         logger.error(f"Error during startup: {e}")
 
 @app.on_event("shutdown")
-async def shutdown_db_client():
+async def shutdown_event():
+    """Cleanup on shutdown"""
+    if scheduler.running:
+        scheduler.shutdown()
     client.close()
