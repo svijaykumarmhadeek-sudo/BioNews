@@ -129,7 +129,7 @@ class Article(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     title: str
     headline: Optional[str] = None  # Concise 50-60 char headline
-    summary: str  # Detailed 350-400 char summary
+    summary: str  # Natural flowing 300-400 char summary
     content: str
     category: str
     source: str
