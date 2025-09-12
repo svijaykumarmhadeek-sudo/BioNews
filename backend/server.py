@@ -657,11 +657,12 @@ async def refresh_articles():
             if existing:
                 continue
                 
-            # Summarize the article content
-            summary = await summarize_article(article_data["content"])
+            # Create Inshorts-style headline and summary
+            headline, summary = await summarize_article(article_data["content"], article_data["title"])
             
             article = Article(
                 **article_data,
+                headline=headline,
                 summary=summary
             )
             
@@ -785,11 +786,12 @@ async def scheduled_news_update():
             if existing:
                 continue
                 
-            # Summarize the article content
-            summary = await summarize_article(article_data["content"])
+            # Create Inshorts-style headline and summary
+            headline, summary = await summarize_article(article_data["content"], article_data["title"])
             
             article = Article(
                 **article_data,
+                headline=headline,
                 summary=summary
             )
             
