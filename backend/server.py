@@ -635,6 +635,47 @@ async def get_article(article_id: str):
         raise HTTPException(status_code=404, detail="Article not found")
     return Article(**article)
 
+@api_router.post("/articles/migrate")
+async def migrate_articles():
+    """Migrate existing articles to Inshorts format"""
+    try:
+        logging.info("Starting article migration to Inshorts format...")
+        
+        # Find articles without headlines
+        articles_to_migrate = await db.articles.find({"headline": {"$exists": False}}).to_list(length=None)
+        migrated_count = 0
+        
+        for article_data in articles_to_migrate:
+            try:
+                # Generate headline and update summary
+                headline, summary = await summarize_article(article_data["content"], article_data["title"])
+                
+                # Update the article
+                await db.articles.update_one(
+                    {"_id": article_data["_id"]},
+                    {
+                        "$set": {
+                            "headline": headline,
+                            "summary": summary
+                        }
+                    }
+                )
+                migrated_count += 1
+                
+            except Exception as e:
+                logging.error(f"Error migrating article {article_data.get('id', 'unknown')}: {e}")
+                continue
+        
+        logging.info(f"Migration completed: {migrated_count} articles migrated")
+        return {
+            "message": f"Migrated {migrated_count} articles to Inshorts format",
+            "migrated_count": migrated_count
+        }
+        
+    except Exception as e:
+        logging.error(f"Error during migration: {e}")
+        raise HTTPException(status_code=500, detail=f"Error during migration: {str(e)}")
+
 @api_router.post("/articles/refresh")
 async def refresh_articles():
     """Fetch and store new articles from real sources"""
