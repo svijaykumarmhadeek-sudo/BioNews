@@ -575,7 +575,7 @@ function App() {
                 <p className="text-gray-500">Try adjusting your search or filter criteria, or refresh to get the latest articles.</p>
               </div>
             ) : (
-              <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+              <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl border border-white/20 overflow-hidden">
                 {articles.map((article, index) => (
                   <InshortsCard key={article.id} article={article} />
                 ))}
