@@ -501,16 +501,31 @@ async def fetch_real_biotech_news() -> List[Dict]:
         logging.error(f"Error in fetch_real_biotech_news: {e}")
         return []
 
-async def summarize_article(content: str) -> str:
-    """Use LLM to summarize article content"""
+async def summarize_article(content: str, title: str) -> tuple:
+    """Use LLM to create Inshorts-style headline and summary"""
     try:
-        user_message = UserMessage(text=f"Summarize this biotech/pharma article in 2-3 sentences: {content}")
+        user_message = UserMessage(text=f"Create Inshorts-style content for this biotech article:\n\nTitle: {title}\nContent: {content}\n\nGenerate:\n1. Concise headline (50-60 chars)\n2. Brief summary (120-150 chars)\n\nFormat: HEADLINE: [headline]\nSUMMARY: [summary]")
         response = await chat.send_message(user_message)
-        return response.strip()
+        
+        # Parse the response
+        lines = response.strip().split('\n')
+        headline = title[:60]  # Fallback
+        summary = content[:150] + "..."  # Fallback
+        
+        for line in lines:
+            if line.startswith('HEADLINE:'):
+                headline = line.replace('HEADLINE:', '').strip()[:60]
+            elif line.startswith('SUMMARY:'):
+                summary = line.replace('SUMMARY:', '').strip()[:150]
+        
+        return headline, summary
+        
     except Exception as e:
-        logging.error(f"Error summarizing article: {e}")
-        # Fallback to first 200 characters
-        return content[:200] + "..." if len(content) > 200 else content
+        logging.error(f"Error creating Inshorts content: {e}")
+        # Fallback to truncated versions
+        headline = title[:60]
+        summary = content[:150] + "..."
+        return headline, summary
 
 # API Routes
 @api_router.get("/")
