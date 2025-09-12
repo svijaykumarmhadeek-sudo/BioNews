@@ -342,75 +342,116 @@ function App() {
   };
 
   const StatusBar = () => (
-    <div className="bg-white rounded-2xl shadow-lg p-4 mb-6">
-      <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <Activity size={16} className="text-green-500" />
-            <span className="font-medium">System Status:</span>
-            <span className="text-green-600">Active</span>
+    <div className="bg-white/80 backdrop-blur-lg rounded-3xl shadow-xl border border-white/20 p-8 mb-8">
+      {/* Main Status Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        {/* System Status */}
+        <div className="flex flex-col items-center p-6 bg-gradient-to-br from-emerald-50 to-green-50 rounded-2xl border border-emerald-100">
+          <div className="flex items-center justify-center w-12 h-12 bg-emerald-500 rounded-full mb-3">
+            <Activity size={20} className="text-white" />
           </div>
-          
-          {systemStatus && (
-            <>
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Clock size={16} />
-                <span>News Update:</span>
-                <span className="font-medium">{getTimeSince(systemStatus.last_news_update)}</span>
-              </div>
-              
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <BookOpen size={16} />
-                <span>Articles:</span>
-                <span className="font-medium">{systemStatus.total_articles}</span>
-              </div>
-
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <BarChart3 size={16} />
-                <span>Stocks:</span>
-                <span className="font-medium">{systemStatus.total_stocks}</span>
-              </div>
-            </>
-          )}
+          <h3 className="font-semibold text-gray-900 mb-1">System Status</h3>
+          <p className="text-emerald-600 font-medium">Active</p>
         </div>
-        
-        <div className="flex items-center gap-2 text-xs text-gray-500">
-          <span>Real-time updates • RSS feeds • Stock data</span>
-          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+
+        {/* News Update */}
+        {systemStatus && (
+          <div className="flex flex-col items-center p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-100">
+            <div className="flex items-center justify-center w-12 h-12 bg-blue-500 rounded-full mb-3">
+              <Clock size={20} className="text-white" />
+            </div>
+            <h3 className="font-semibold text-gray-900 mb-1">Last Update</h3>
+            <p className="text-blue-600 font-medium text-center text-sm">{getTimeSince(systemStatus.last_news_update)}</p>
+          </div>
+        )}
+
+        {/* Articles Count */}
+        {systemStatus && (
+          <div className="flex flex-col items-center p-6 bg-gradient-to-br from-purple-50 to-violet-50 rounded-2xl border border-purple-100">
+            <div className="flex items-center justify-center w-12 h-12 bg-purple-500 rounded-full mb-3">
+              <BookOpen size={20} className="text-white" />
+            </div>
+            <h3 className="font-semibold text-gray-900 mb-1">Articles</h3>
+            <p className="text-purple-600 font-bold text-xl">{systemStatus.total_articles}</p>
+          </div>
+        )}
+
+        {/* Stocks Count */}
+        {systemStatus && (
+          <div className="flex flex-col items-center p-6 bg-gradient-to-br from-orange-50 to-amber-50 rounded-2xl border border-orange-100">
+            <div className="flex items-center justify-center w-12 h-12 bg-orange-500 rounded-full mb-3">
+              <BarChart3 size={20} className="text-white" />
+            </div>
+            <h3 className="font-semibold text-gray-900 mb-1">Stocks</h3>
+            <p className="text-orange-600 font-bold text-xl">{systemStatus.total_stocks}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Live Status Indicator */}
+      <div className="flex items-center justify-center mb-8">
+        <div className="flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-500 rounded-full text-white shadow-lg">
+          <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
+          <span className="font-medium">Real-time updates • RSS feeds • Stock data</span>
         </div>
       </div>
 
-      {/* Top Gainers/Losers Quick View */}
+      {/* Enhanced Top Gainers/Losers */}
       {systemStatus && systemStatus.top_gainers && systemStatus.top_losers && (
-        <div className="mt-4 pt-4 border-t border-gray-200">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <h4 className="text-sm font-semibold text-green-600 mb-2 flex items-center gap-1">
-                <TrendingUp size={14} />
-                Top Gainers
-              </h4>
-              <div className="space-y-1">
-                {systemStatus.top_gainers.slice(0, 3).map((stock, index) => (
-                  <div key={index} className="flex justify-between items-center text-xs">
-                    <span className="font-medium">{stock.symbol}</span>
-                    <span className="text-green-600">+{stock.percent_change.toFixed(2)}%</span>
-                  </div>
-                ))}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Top Gainers */}
+          <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-2xl p-6 border border-emerald-100">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center justify-center w-10 h-10 bg-emerald-500 rounded-full">
+                <TrendingUp size={18} className="text-white" />
               </div>
+              <h4 className="text-lg font-bold text-emerald-700">Top Gainers</h4>
             </div>
-            <div>
-              <h4 className="text-sm font-semibold text-red-600 mb-2 flex items-center gap-1">
-                <TrendingDown size={14} />
-                Top Losers
-              </h4>
-              <div className="space-y-1">
-                {systemStatus.top_losers.slice(0, 3).map((stock, index) => (
-                  <div key={index} className="flex justify-between items-center text-xs">
-                    <span className="font-medium">{stock.symbol}</span>
-                    <span className="text-red-600">{stock.percent_change.toFixed(2)}%</span>
+            <div className="space-y-4">
+              {systemStatus.top_gainers.slice(0, 3).map((stock, index) => (
+                <div key={index} className="flex items-center justify-between p-4 bg-white/60 rounded-xl backdrop-blur-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
+                      <span className="text-emerald-600 font-bold text-sm">{index + 1}</span>
+                    </div>
+                    <span className="font-semibold text-gray-900">{stock.symbol}</span>
                   </div>
-                ))}
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-600 text-sm">${stock.current_price}</span>
+                    <span className="bg-emerald-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                      +{stock.percent_change.toFixed(2)}%
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Top Losers */}
+          <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-2xl p-6 border border-red-100">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center justify-center w-10 h-10 bg-red-500 rounded-full">
+                <TrendingDown size={18} className="text-white" />
               </div>
+              <h4 className="text-lg font-bold text-red-700">Top Losers</h4>
+            </div>
+            <div className="space-y-4">
+              {systemStatus.top_losers.slice(0, 3).map((stock, index) => (
+                <div key={index} className="flex items-center justify-between p-4 bg-white/60 rounded-xl backdrop-blur-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                      <span className="text-red-600 font-bold text-sm">{index + 1}</span>
+                    </div>
+                    <span className="font-semibold text-gray-900">{stock.symbol}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-600 text-sm">${stock.current_price}</span>
+                    <span className="bg-red-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+                      {stock.percent_change.toFixed(2)}%
+                    </span>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
